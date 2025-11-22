@@ -487,7 +487,6 @@
             <button class="nav-tab" onclick="switchTab('monitor')">监控</button>
             <button class="nav-tab" onclick="switchTab('settings')">设置</button>
             <button class="nav-tab" onclick="switchTab('proxies')">代理管理</button>
-            <button class="nav-tab" onclick="switchTab('sessions')">会话管理</button>
             <button class="nav-tab" onclick="switchTab('pricing')">定价管理</button>
         </div>
 
@@ -903,32 +902,6 @@
             </div>
         </div>
 
-        <!-- Sessions -->
-        <div id="sessions" class="tab-content">
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0;">活跃会话</h3>
-                    <div class="flex-buttons">
-                        <button onclick="loadSessions()" class="btn-secondary">刷新</button>
-                        <button onclick="releaseAllSessions()" class="btn-danger">释放所有</button>
-                    </div>
-                </div>
-                <div id="sessionList">
-                    <div style="text-align: center; color: #9ca3af; padding: 20px;">加载中...</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>会话说明</h3>
-                <p style="color: #6b7280; line-height: 1.8;">
-                    • <strong>粘性会话</strong>: 每个客户端会话（sessionId）会绑定到固定的 Google Token<br>
-                    • <strong>自动超时</strong>: 30分钟无请求后自动释放绑定<br>
-                    • <strong>配额管理</strong>: Token配额耗尽时自动禁用并切换，次日UTC 0点自动恢复<br>
-                    • <strong>手动释放</strong>: 可手动释放会话以重新分配Token
-                </p>
-            </div>
-        </div>
-
         <!-- Pricing -->
         <div id="pricing" class="tab-content">
             <div class="card">
@@ -1091,7 +1064,6 @@
             if (tabName === 'test') loadModels();
             if (tabName === 'settings') loadSettings();
             if (tabName === 'proxies') loadProxies();
-            if (tabName === 'sessions') loadSessions();
             if (tabName === 'pricing') loadPricing();
         }
 
@@ -2183,110 +2155,6 @@
             }
         }
 
-        // ===== 会话管理函数 =====
-
-        // 加载会话列表
-        async function loadSessions() {
-            try {
-                const response = await authFetch(`${API_BASE}/admin/sessions`);
-                const sessions = await response.json();
-                const container = document.getElementById('sessionList');
-
-                if (sessions.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">当前没有活跃会话</div>';
-                    return;
-                }
-
-                container.innerHTML = sessions.map(session => {
-                    const idleMinutes = Math.floor(session.idleTime / 60);
-                    const idleSeconds = session.idleTime % 60;
-                    const expiresMinutes = Math.floor(session.willExpireIn / 60);
-                    const expiresSeconds = session.willExpireIn % 60;
-
-                    return `
-                        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 600; margin-bottom: 8px; color: #111827;">
-                                        Session: ${session.sessionId.substring(0, 16)}...
-                                        <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">
-                                            Token #${session.tokenIndex}
-                                        </span>
-                                    </div>
-                                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 4px;">
-                                        刷新令牌: ${session.refreshToken}
-                                    </div>
-                                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 4px;">
-                                        总请求数: <strong>${session.requests}</strong>
-                                    </div>
-                                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 4px;">
-                                        空闲时间: <strong>${idleMinutes}分${idleSeconds}秒</strong>
-                                    </div>
-                                    <div style="color: #9ca3af; font-size: 12px;">
-                                        将在 ${expiresMinutes}分${expiresSeconds}秒后过期
-                                    </div>
-                                </div>
-                                <div>
-                                    <button onclick="releaseSession('${session.sessionId}')" class="btn-danger" style="padding: 6px 12px; font-size: 14px;">
-                                        释放
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (error) {
-                console.error('加载会话列表失败:', error);
-                document.getElementById('sessionList').innerHTML =
-                    '<div style="text-align: center; color: #ef4444; padding: 20px;">加载失败</div>';
-            }
-        }
-
-        // 释放单个会话
-        async function releaseSession(sessionId) {
-            if (!confirm(`确定要释放 Session ${sessionId.substring(0, 16)}... 吗？`)) {
-                return;
-            }
-
-            try {
-                const response = await authFetch(`${API_BASE}/admin/sessions/${sessionId}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    alert('Session 已释放');
-                    await loadSessions();
-                } else {
-                    alert('释放失败: ' + (result.error || '未知错误'));
-                }
-            } catch (error) {
-                alert('释放失败: ' + error.message);
-            }
-        }
-
-        // 释放所有会话
-        async function releaseAllSessions() {
-            if (!confirm('确定要释放所有活跃会话吗？')) {
-                return;
-            }
-
-            try {
-                const response = await authFetch(`${API_BASE}/admin/sessions`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    alert(result.message || '所有会话已释放');
-                    await loadSessions();
-                } else {
-                    alert('释放失败: ' + (result.error || '未知错误'));
-                }
-            } catch (error) {
-                alert('释放失败: ' + error.message);
-            }
-        }
 
         // ========== 定价管理相关函数 ==========
 

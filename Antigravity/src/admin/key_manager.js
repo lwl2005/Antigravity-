@@ -27,7 +27,7 @@ export async function loadKeys() {
     const data = await fs.readFile(KEYS_FILE, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    if (error.code === 'ENOENT') {
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) {
       return [];
     }
     throw error;

@@ -22,7 +22,7 @@ export async function loadUsageLogs() {
     const data = await fs.readFile(USAGE_LOG_FILE, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    if (error.code === 'ENOENT') {
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) {
       return [];
     }
     throw error;
