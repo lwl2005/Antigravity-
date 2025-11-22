@@ -18,12 +18,8 @@ class TokenManager {
     this.loadInterval = 60000; // 1分钟内不重复加载
     this.cachedData = null; // 缓存文件数据，减少磁盘读取
 
-    // 粘性会话管理
-    this.sessionBindings = new Map(); // sessionId -> { tokenIndex, lastAccessTime, refreshToken }
-    this.tokenSessions = new Map(); // refreshToken -> sessionId
-
-    // 会话超时配置（30分钟）
-    this.SESSION_TIMEOUT = 30 * 60 * 1000;
+    // 轮询机制
+    this.currentTokenIndex = 0; // 轮询索引
 
     // 使用统计
     this.usageStats = new Map(); // refresh_token -> { requests, lastUsed }
@@ -31,7 +27,6 @@ class TokenManager {
     this.loadTokens();
 
     // 启动定时任务
-    this.startSessionCleanup();
     this.startQuotaResetCheck();
   }
 
@@ -146,127 +141,10 @@ class TokenManager {
   // ========== 粘性会话机制 ==========
 
   /**
-   * 根据 sessionId 获取或分配 token
-   * @param {string} sessionId - 会话ID
-   * @returns {Promise<Object>} - Token对象
-   */
-  async getTokenForSession(sessionId) {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
-    }
-
-    // 1. 检查是否已有绑定
-    if (this.sessionBindings.has(sessionId)) {
-      const binding = this.sessionBindings.get(sessionId);
-      binding.lastAccessTime = Date.now();
-
-      const token = this.tokens.find(t => t.refresh_token === binding.refreshToken);
-
-      if (token && token.enable !== false && !this.isTokenDisabledByQuota(token)) {
-        // Token 可用，刷新如果过期
-        if (this.isExpired(token)) {
-          await this.refreshToken(token);
-        }
-
-        // 记录使用统计
-        this.recordUsage(token);
-        log.info(`🔗 Session ${sessionId.substring(0, 8)}... 使用已绑定的 Token (总请求: ${this.getTokenRequests(token)})`);
-
-        return token;
-      } else {
-        // Token 已被禁用或不可用，释放绑定并重新分配
-        log.warn(`Token for session ${sessionId.substring(0, 8)}... is disabled, releasing and reassigning`);
-        this.releaseSession(sessionId);
-      }
-    }
-
-    // 2. 分配一个空闲的 token
-    const freeToken = this.findFreeToken();
-    if (!freeToken) {
-      throw new Error('No available tokens. All tokens are either in use or disabled.');
-    }
-
-    // 3. 刷新 token 如果需要
-    if (this.isExpired(freeToken.token)) {
-      await this.refreshToken(freeToken.token);
-    }
-
-    // 4. 建立绑定
-    this.sessionBindings.set(sessionId, {
-      tokenIndex: freeToken.index,
-      refreshToken: freeToken.token.refresh_token,
-      lastAccessTime: Date.now()
-    });
-    this.tokenSessions.set(freeToken.token.refresh_token, sessionId);
-
-    // 记录使用统计
-    this.recordUsage(freeToken.token);
-    log.info(`🆕 Session ${sessionId.substring(0, 8)}... 绑定到新 Token #${freeToken.index}`);
-
-    return freeToken.token;
-  }
-
-  /**
-   * 查找空闲的 token
-   * @returns {Object|null} - { index, token } 或 null
-   */
-  findFreeToken() {
-    for (let i = 0; i < this.tokens.length; i++) {
-      const token = this.tokens[i];
-
-      // 跳过禁用的 token
-      if (token.enable === false) continue;
-
-      // 跳过配额耗尽的 token
-      if (this.isTokenDisabledByQuota(token)) continue;
-
-      // 检查是否已被其他 session 使用
-      if (!this.tokenSessions.has(token.refresh_token)) {
-        return { index: i, token };
-      }
-    }
-    return null;
-  }
-
-  /**
    * 检查 token 是否因配额耗尽而被禁用
    */
   isTokenDisabledByQuota(token) {
     return token.disabledUntil && Date.now() < token.disabledUntil;
-  }
-
-  /**
-   * 释放 session 绑定
-   * @param {string} sessionId - 会话ID
-   */
-  releaseSession(sessionId) {
-    const binding = this.sessionBindings.get(sessionId);
-    if (binding) {
-      this.tokenSessions.delete(binding.refreshToken);
-      this.sessionBindings.delete(sessionId);
-      log.info(`🔓 Session ${sessionId.substring(0, 8)}... 已释放`);
-    }
-  }
-
-  /**
-   * 定时清理过期 session
-   */
-  startSessionCleanup() {
-    setInterval(() => {
-      const now = Date.now();
-      let cleanedCount = 0;
-
-      for (const [sessionId, binding] of this.sessionBindings.entries()) {
-        if (now - binding.lastAccessTime > this.SESSION_TIMEOUT) {
-          this.releaseSession(sessionId);
-          cleanedCount++;
-        }
-      }
-
-      if (cleanedCount > 0) {
-        log.info(`🧹 清理了 ${cleanedCount} 个过期会话`);
-      }
-    }, 60000); // 每分钟检查一次
   }
 
   // ========== 配额管理 ==========
@@ -278,12 +156,6 @@ class TokenManager {
     token.disabledUntil = resetTime;
     token.quotaExhausted = true; // 标记为配额耗尽
     this.saveToFile();
-
-    // 释放这个 token 的 session 绑定
-    const sessionId = this.tokenSessions.get(token.refresh_token);
-    if (sessionId) {
-      this.releaseSession(sessionId);
-    }
 
     const resetDate = new Date(resetTime);
     log.warn(`⏸️  Token 因配额耗尽被禁用，将在 ${resetDate.toLocaleString()} 自动恢复`);
@@ -298,13 +170,6 @@ class TokenManager {
     delete token.disabledUntil;
     delete token.quotaExhausted;
     this.saveToFile();
-
-    // 释放这个 token 的 session 绑定
-    const sessionId = this.tokenSessions.get(token.refresh_token);
-    if (sessionId) {
-      this.releaseSession(sessionId);
-    }
-
     this.loadTokens(true); // 强制刷新
   }
 
@@ -338,7 +203,7 @@ class TokenManager {
   /**
    * 处理请求错误（检测配额耗尽）
    */
-  async handleRequestError(error, token, sessionId) {
+  async handleRequestError(error, token) {
     // 配额耗尽错误
     if (error.statusCode === 429 || (error.message && error.message.includes('quota'))) {
       log.warn(`🚫 Token 配额耗尽: ${error.message}`);
@@ -350,12 +215,8 @@ class TokenManager {
 
       this.disableTokenUntil(token, tomorrow.getTime());
 
-      // 如果有 sessionId，尝试为这个 session 重新分配 token
-      if (sessionId) {
-        return await this.getTokenForSession(sessionId);
-      }
-
-      throw error;
+      // 返回下一个可用的 token
+      return await this.getNextToken();
     }
 
     // 403 错误 - 永久禁用
@@ -363,12 +224,17 @@ class TokenManager {
       log.warn(`🚫 Token 遇到 403 错误，永久禁用`);
       this.disableToken(token);
 
-      // 如果有 sessionId，尝试为这个 session 重新分配 token
-      if (sessionId) {
-        return await this.getTokenForSession(sessionId);
-      }
+      // 返回下一个可用的 token
+      return await this.getNextToken();
+    }
 
-      throw error;
+    // 400 错误 - 模型权限不足
+    if (error.statusCode === 400) {
+      log.warn(`🚫 Token 无权访问该模型，永久禁用`);
+      this.disableToken(token);
+
+      // 返回下一个可用的 token
+      return await this.getNextToken();
     }
 
     throw error;
@@ -404,47 +270,22 @@ class TokenManager {
     const stats = [];
     this.tokens.forEach((token, index) => {
       const usage = this.usageStats.get(token.refresh_token) || { requests: 0, lastUsed: null };
-      const sessionId = this.tokenSessions.get(token.refresh_token);
 
       stats.push({
         index,
         requests: usage.requests,
         lastUsed: usage.lastUsed ? new Date(usage.lastUsed).toISOString() : null,
-        inUse: !!sessionId,
-        sessionId: sessionId || null,
+        enabled: token.enable !== false,
         quotaExhausted: !!token.quotaExhausted,
         disabledUntil: token.disabledUntil ? new Date(token.disabledUntil).toISOString() : null
       });
     });
     return {
       totalTokens: this.tokens.length,
-      availableTokens: this.tokens.filter(t => !this.tokenSessions.has(t.refresh_token) && !this.isTokenDisabledByQuota(t)).length,
-      activeSessions: this.sessionBindings.size,
+      availableTokens: this.tokens.filter(t => token.enable !== false && !this.isTokenDisabledByQuota(t)).length,
       totalRequests: Array.from(this.usageStats.values()).reduce((sum, s) => sum + s.requests, 0),
       tokens: stats
     };
-  }
-
-  /**
-   * 获取所有 session 绑定信息
-   */
-  getSessionBindings() {
-    const bindings = [];
-    for (const [sessionId, binding] of this.sessionBindings.entries()) {
-      const token = this.tokens.find(t => t.refresh_token === binding.refreshToken);
-      const usage = this.usageStats.get(binding.refreshToken) || { requests: 0 };
-
-      bindings.push({
-        sessionId,
-        tokenIndex: binding.tokenIndex,
-        refreshToken: binding.refreshToken.substring(0, 20) + '...',
-        lastAccessTime: binding.lastAccessTime,
-        idleTime: Math.floor((Date.now() - binding.lastAccessTime) / 1000),
-        requests: usage.requests,
-        willExpireIn: Math.floor((this.SESSION_TIMEOUT - (Date.now() - binding.lastAccessTime)) / 1000)
-      });
-    }
-    return bindings;
   }
 
   /**
@@ -469,16 +310,47 @@ class TokenManager {
     throw new Error('No enabled tokens available.');
   }
 
-  // ========== 兼容旧接口 ==========
-
   /**
-   * @deprecated 使用 getTokenForSession 代替
+   * 使用轮询方式获取下一个可用的 token
+   * @returns {Promise<Object>} - Token对象
    */
-  async getToken() {
-    log.warn('getToken() is deprecated. Use getTokenForSession(sessionId) instead.');
-    // 生成一个临时的 sessionId
-    const tempSessionId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    return await this.getTokenForSession(tempSessionId);
+  async getNextToken() {
+    await this.loadTokens();
+
+    if (this.tokens.length === 0) {
+      throw new Error('No tokens available.');
+    }
+
+    // 过滤出可用的 token（启用且未因配额耗尽而被禁用）
+    const availableTokens = this.tokens.filter(token =>
+      token.enable !== false && !this.isTokenDisabledByQuota(token)
+    );
+
+    if (availableTokens.length === 0) {
+      throw new Error('No enabled tokens available.');
+    }
+
+    // 轮询选择下一个 token
+    const token = availableTokens[this.currentTokenIndex % availableTokens.length];
+    this.currentTokenIndex++;
+
+    // 如果索引太大，重置为0避免溢出
+    if (this.currentTokenIndex > 10000) {
+      this.currentTokenIndex = 0;
+    }
+
+    // 刷新 token 如果需要
+    if (this.isExpired(token)) {
+      await this.refreshToken(token);
+    }
+
+    // 记录使用统计
+    this.recordUsage(token);
+
+    const tokenInfo = this.tokens.findIndex(t => t.refresh_token === token.refresh_token);
+    log.info(`🔄 轮询选择 Token #${tokenInfo} (总请求: ${this.getTokenRequests(token)})`);
+
+    return token;
   }
 
   disableCurrentToken(token) {

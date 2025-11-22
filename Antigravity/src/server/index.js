@@ -314,13 +314,9 @@ app.post('/v1beta/models/:model\\:streamGenerateContent', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // 使用粘性会话机制获取 token
-    const sessionId = requestBody.request?.sessionId;
-    if (!sessionId) {
-      throw new Error('Session ID is required');
-    }
-
-    const token = await tokenManager.getTokenForSession(sessionId);
+    // 使用轮询机制获取 token
+    const sessionId = requestBody.request?.sessionId || `session_${Date.now()}`;
+    const token = await tokenManager.getNextToken();
     if (!token) {
       throw new Error('没有可用的token');
     }
@@ -352,8 +348,7 @@ app.post('/v1beta/models/:model\\:streamGenerateContent', async (req, res) => {
         try {
           const newToken = await tokenManager.handleRequestError(
             { statusCode: 403, message: '该账号没有使用权限' },
-            token,
-            sessionId
+            token
           );
           // 如果成功获取新token，重试请求（这里简化处理，只是报错）
           const error = new Error(`该账号没有使用权限，已自动切换token`);
@@ -372,8 +367,7 @@ app.post('/v1beta/models/:model\\:streamGenerateContent', async (req, res) => {
         try {
           const newToken = await tokenManager.handleRequestError(
             { statusCode: 429, message: errorMessage },
-            token,
-            sessionId
+            token
           );
           // 如果成功获取新token，提示用户重试
           const error = new Error(`配额耗尽，已自动切换token，请重试`);
@@ -508,8 +502,8 @@ app.post('/v1beta/models/:model\\:generateContent', async (req, res) => {
   try {
     const requestBody = generateAntigravityRequestFromGemini(req.body, model);
 
-    // 直接获取 token 并调用 API
-    const token = await tokenManager.getToken();
+    // 使用轮询机制获取 token
+    const token = await tokenManager.getNextToken();
     if (!token) {
       throw new Error('没有可用的token');
     }
@@ -541,8 +535,7 @@ app.post('/v1beta/models/:model\\:generateContent', async (req, res) => {
         try {
           const newToken = await tokenManager.handleRequestError(
             { statusCode: 403, message: '该账号没有使用权限' },
-            token,
-            sessionId
+            token
           );
           // 如果成功获取新token，重试请求（这里简化处理，只是报错）
           const error = new Error(`该账号没有使用权限，已自动切换token`);
@@ -561,8 +554,7 @@ app.post('/v1beta/models/:model\\:generateContent', async (req, res) => {
         try {
           const newToken = await tokenManager.handleRequestError(
             { statusCode: 429, message: errorMessage },
-            token,
-            sessionId
+            token
           );
           // 如果成功获取新token，提示用户重试
           const error = new Error(`配额耗尽，已自动切换token，请重试`);
