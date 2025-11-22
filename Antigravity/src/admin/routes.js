@@ -15,6 +15,7 @@ import { loadAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnoun
 import { loadModels, fetchAndSaveModels, updateModelQuota, toggleModel, getModelStats, cleanupOldUsage, setUserModelQuota, getUserModelQuota } from './model_manager.js';
 import { getSecurityStats, unbanIP, unbanDevice, isIPBanned, isDeviceBanned } from './security_manager.js';
 import { isUserBanned, banUserFromSharing, unbanUser, recordShareUsage, getUserAverageUsage, checkAndBanAbuser, addToTokenBlacklist, removeFromTokenBlacklist, isUserBlacklisted, getTokenBlacklist, createVote, castVote, addVoteComment, processVoteResult, getActiveVotes, getVoteById, getUserVoteHistory, getAllVotes, getUserShareStatus } from './share_manager.js';
+import { registerUser, loginUser, getUserById, getUserByUsername, generateUserApiKey, deleteUserApiKey, getUserApiKeys, validateUserApiKey, updateUser, deleteUser, getUserStats, getAllUsers, toggleUserStatus, loginOrRegisterWithGoogle, getUserTokens, addUserToken, deleteUserToken, getUserAvailableToken } from './user_manager.js';
 
 // 配置文件上传
 const upload = multer({ dest: 'uploads/' });
@@ -116,6 +117,49 @@ router.get('/announcements/active', async (req, res) => {
     res.json(announcements);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== 用户系统 - 公开路由（不需要认证）==========
+
+// 用户注册
+router.post('/users/register', async (req, res) => {
+  try {
+    const { username, password, email } = req.body;
+    const user = await registerUser(username, password, email);
+    await addLog('success', `新用户注册: ${username}`);
+    res.json({ success: true, user });
+  } catch (error) {
+    await addLog('error', `用户注册失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 用户登录
+router.post('/users/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const result = await loginUser(username, password);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
+// Google OAuth 登录/注册
+router.post('/users/google-auth', async (req, res) => {
+  try {
+    const { googleUser } = req.body;
+    if (!googleUser || !googleUser.email) {
+      return res.status(400).json({ error: '无效的 Google 用户信息' });
+    }
+
+    const result = await loginOrRegisterWithGoogle(googleUser);
+    await addLog('info', `Google 登录: ${result.username}`);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    await addLog('error', `Google 登录失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -1230,6 +1274,192 @@ router.get('/share/votes/user/:userId', async (req, res) => {
     const { userId } = req.params;
     const votes = await getUserVoteHistory(userId);
     res.json({ votes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== 用户管理 API（需要认证）==========
+
+// 获取所有用户（管理员）
+router.get('/users', async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取用户统计
+router.get('/users/stats', async (req, res) => {
+  try {
+    const stats = await getUserStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取单个用户信息
+router.get('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 更新用户信息
+router.patch('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    const user = await updateUser(userId, updates);
+    await addLog('info', `用户信息已更新: ${userId}`);
+    res.json({ success: true, user });
+  } catch (error) {
+    await addLog('error', `更新用户失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 删除用户
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    await deleteUser(userId);
+    await addLog('warn', `用户已删除: ${userId}`);
+    res.json({ success: true });
+  } catch (error) {
+    await addLog('error', `删除用户失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 启用/禁用用户
+router.patch('/users/:userId/toggle', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { enabled } = req.body;
+    await toggleUserStatus(userId, enabled);
+    await addLog('info', `用户已${enabled ? '启用' : '禁用'}: ${userId}`);
+    res.json({ success: true });
+  } catch (error) {
+    await addLog('error', `切换用户状态失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== 用户 API 密钥管理 =====
+
+// 获取用户的API密钥列表
+router.get('/users/:userId/api-keys', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const keys = await getUserApiKeys(userId);
+    res.json({ keys });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 为用户生成API密钥
+router.post('/users/:userId/api-keys', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name } = req.body;
+    const key = await generateUserApiKey(userId, name);
+    await addLog('success', `用户 ${userId} 创建了新API密钥: ${name}`);
+    res.json({ success: true, key });
+  } catch (error) {
+    await addLog('error', `生成API密钥失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 删除用户的API密钥
+router.delete('/users/:userId/api-keys/:keyId', async (req, res) => {
+  try {
+    const { userId, keyId } = req.params;
+    await deleteUserApiKey(userId, keyId);
+    await addLog('info', `用户 ${userId} 删除了API密钥: ${keyId}`);
+    res.json({ success: true });
+  } catch (error) {
+    await addLog('error', `删除API密钥失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 验证用户API密钥
+router.post('/users/validate-api-key', async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+    if (!apiKey) {
+      return res.status(400).json({ error: '请提供API密钥' });
+    }
+
+    const result = await validateUserApiKey(apiKey);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== 用户 Google Token 管理 =====
+
+// 获取用户的Google Tokens
+router.get('/users/:userId/tokens', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const tokens = await getUserTokens(userId);
+    res.json({ tokens });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 为用户添加Google Token
+router.post('/users/:userId/tokens', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const tokenData = req.body;
+    const result = await addUserToken(userId, tokenData);
+    await addLog('success', `用户 ${userId} 添加了新Token`);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `添加Token失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 删除用户的Google Token
+router.delete('/users/:userId/tokens/:tokenIndex', async (req, res) => {
+  try {
+    const { userId, tokenIndex } = req.params;
+    const result = await deleteUserToken(userId, parseInt(tokenIndex));
+    await addLog('info', `用户 ${userId} 删除了Token #${tokenIndex}`);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `删除Token失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取用户的可用Token
+router.get('/users/:userId/available-token', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const token = await getUserAvailableToken(userId);
+    if (!token) {
+      return res.status(404).json({ error: '没有可用的Token' });
+    }
+    res.json({ token });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
