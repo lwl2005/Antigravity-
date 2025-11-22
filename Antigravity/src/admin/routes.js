@@ -14,6 +14,7 @@ import proxyManager from './proxy_manager.js';
 import { loadAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement, getActiveAnnouncements, getAnnouncementById } from './announcement_manager.js';
 import { loadModels, fetchAndSaveModels, updateModelQuota, toggleModel, getModelStats, cleanupOldUsage, setUserModelQuota, getUserModelQuota } from './model_manager.js';
 import { getSecurityStats, unbanIP, unbanDevice, isIPBanned, isDeviceBanned } from './security_manager.js';
+import { isUserBanned, banUserFromSharing, unbanUser, recordShareUsage, getUserAverageUsage, checkAndBanAbuser, addToTokenBlacklist, removeFromTokenBlacklist, isUserBlacklisted, getTokenBlacklist, createVote, castVote, addVoteComment, processVoteResult, getActiveVotes, getVoteById, getUserVoteHistory, getAllVotes, getUserShareStatus } from './share_manager.js';
 
 // 配置文件上传
 const upload = multer({ dest: 'uploads/' });
@@ -942,6 +943,294 @@ router.post('/security/unban-device', async (req, res) => {
     }
   } catch (error) {
     await addLog('error', `解封设备失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== 分享管理 API ==========
+
+// ===== 用户封禁系统 =====
+
+// 检查用户是否被封禁
+router.get('/share/check-ban/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const banStatus = await isUserBanned(userId);
+    res.json(banStatus);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 封禁用户使用共享
+router.post('/share/ban-user', async (req, res) => {
+  try {
+    const { userId, reason } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: '请提供用户 ID' });
+    }
+
+    const result = await banUserFromSharing(userId, reason);
+    await addLog('warn', `用户 ${userId} 被封禁使用共享: ${reason || '滥用共享资源'}`);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    await addLog('error', `封禁用户失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 解除用户封禁
+router.post('/share/unban-user', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: '请提供用户 ID' });
+    }
+
+    await unbanUser(userId);
+    await addLog('info', `用户 ${userId} 的共享封禁已解除`);
+    res.json({ success: true });
+  } catch (error) {
+    await addLog('error', `解除封禁失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 记录共享使用
+router.post('/share/record-usage', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: '请提供用户 ID' });
+    }
+
+    const usageCount = await recordShareUsage(userId);
+    res.json({ success: true, usageCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取用户平均使用量
+router.get('/share/average-usage/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const avgUsage = await getUserAverageUsage(userId);
+    res.json({ userId, avgUsage });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 检查并封禁滥用者
+router.post('/share/check-abuser', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: '请提供用户 ID' });
+    }
+
+    const result = await checkAndBanAbuser(userId);
+    if (result.banned) {
+      await addLog('warn', `用户 ${userId} 因滥用被自动封禁`);
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取用户共享状态
+router.get('/share/user-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const status = await getUserShareStatus(userId);
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== Token 黑名单系统 =====
+
+// 添加用户到 Token 黑名单
+router.post('/share/blacklist/add', async (req, res) => {
+  try {
+    const { ownerId, tokenIndex, targetUserId } = req.body;
+    if (!ownerId || tokenIndex === undefined || !targetUserId) {
+      return res.status(400).json({ error: '请提供 ownerId, tokenIndex 和 targetUserId' });
+    }
+
+    const blacklist = await addToTokenBlacklist(ownerId, tokenIndex, targetUserId);
+    await addLog('info', `用户 ${targetUserId} 被添加到 Token 黑名单`);
+    res.json({ success: true, blacklist });
+  } catch (error) {
+    await addLog('error', `添加黑名单失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 从 Token 黑名单移除用户
+router.post('/share/blacklist/remove', async (req, res) => {
+  try {
+    const { ownerId, tokenIndex, targetUserId } = req.body;
+    if (!ownerId || tokenIndex === undefined || !targetUserId) {
+      return res.status(400).json({ error: '请提供 ownerId, tokenIndex 和 targetUserId' });
+    }
+
+    const blacklist = await removeFromTokenBlacklist(ownerId, tokenIndex, targetUserId);
+    await addLog('info', `用户 ${targetUserId} 已从 Token 黑名单移除`);
+    res.json({ success: true, blacklist });
+  } catch (error) {
+    await addLog('error', `移除黑名单失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 检查用户是否在 Token 黑名单中
+router.get('/share/blacklist/check/:ownerId/:tokenIndex/:userId', async (req, res) => {
+  try {
+    const { ownerId, tokenIndex, userId } = req.params;
+    const blacklisted = await isUserBlacklisted(ownerId, parseInt(tokenIndex), userId);
+    res.json({ blacklisted });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取 Token 的黑名单
+router.get('/share/blacklist/:ownerId/:tokenIndex', async (req, res) => {
+  try {
+    const { ownerId, tokenIndex } = req.params;
+    const blacklist = await getTokenBlacklist(ownerId, parseInt(tokenIndex));
+    res.json({ blacklist });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== 投票封禁系统 =====
+
+// 创建投票
+router.post('/share/votes/create', async (req, res) => {
+  try {
+    const { targetUserId, reason, createdBy } = req.body;
+    if (!targetUserId || !reason || !createdBy) {
+      return res.status(400).json({ error: '请提供 targetUserId, reason 和 createdBy' });
+    }
+
+    const result = await createVote(targetUserId, reason, createdBy);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    await addLog('info', `用户 ${createdBy} 发起了对 ${targetUserId} 的封禁投票`);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `创建投票失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 投票
+router.post('/share/votes/cast', async (req, res) => {
+  try {
+    const { voteId, userId, decision } = req.body;
+    if (!voteId || !userId || !decision) {
+      return res.status(400).json({ error: '请提供 voteId, userId 和 decision' });
+    }
+
+    if (!['ban', 'unban'].includes(decision)) {
+      return res.status(400).json({ error: 'decision 必须是 ban 或 unban' });
+    }
+
+    const result = await castVote(voteId, userId, decision);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 添加投票评论
+router.post('/share/votes/comment', async (req, res) => {
+  try {
+    const { voteId, userId, content } = req.body;
+    if (!voteId || !userId || !content) {
+      return res.status(400).json({ error: '请提供 voteId, userId 和 content' });
+    }
+
+    const result = await addVoteComment(voteId, userId, content);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 处理投票结果
+router.post('/share/votes/process/:voteId', async (req, res) => {
+  try {
+    const { voteId } = req.params;
+    const result = await processVoteResult(voteId);
+
+    if (result.status === 'passed') {
+      await addLog('warn', `投票 ${voteId} 通过，执行封禁`);
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取所有活跃投票
+router.get('/share/votes/active', async (req, res) => {
+  try {
+    const votes = await getActiveVotes();
+    res.json({ votes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取所有投票（包括历史）
+router.get('/share/votes/all', async (req, res) => {
+  try {
+    const votes = await getAllVotes();
+    res.json({ votes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取投票详情
+router.get('/share/votes/:voteId', async (req, res) => {
+  try {
+    const { voteId } = req.params;
+    const vote = await getVoteById(voteId);
+    if (!vote) {
+      return res.status(404).json({ error: '投票不存在' });
+    }
+    res.json({ vote });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取用户的投票历史
+router.get('/share/votes/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const votes = await getUserVoteHistory(userId);
+    res.json({ votes });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
