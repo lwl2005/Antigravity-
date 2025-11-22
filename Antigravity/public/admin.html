@@ -2500,7 +2500,7 @@
         // 加载公告列表
         async function loadAnnouncements() {
             try {
-                const response = await apiRequest('/admin/announcements');
+                const response = await authFetch(`${API_BASE}/admin/announcements`);
                 const announcements = await response.json();
 
                 const container = document.getElementById('announcementsList');
@@ -2552,7 +2552,7 @@
             }
 
             try {
-                const response = await apiRequest('/admin/announcements', {
+                const response = await authFetch(`${API_BASE}/admin/announcements`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title, content, type, pinned })
@@ -2576,7 +2576,7 @@
         // 切换公告状态
         async function toggleAnnouncementStatus(id, enabled) {
             try {
-                const response = await apiRequest(`/admin/announcements/${id}`, {
+                const response = await authFetch(`${API_BASE}/admin/announcements/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ enabled })
@@ -2598,7 +2598,7 @@
             if (!confirm('确定要删除这条公告吗？')) return;
 
             try {
-                const response = await apiRequest(`/admin/announcements/${id}`, {
+                const response = await authFetch(`${API_BASE}/admin/announcements/${id}`, {
                     method: 'DELETE'
                 });
 
@@ -2661,7 +2661,7 @@
         // 加载模型列表
         async function loadModelsList() {
             try {
-                const response = await apiRequest('/admin/models');
+                const response = await authFetch(`${API_BASE}/admin/models`);
                 const models = await response.json();
 
                 const grid = document.getElementById('modelsGrid');
@@ -2706,7 +2706,7 @@
         // 加载模型统计
         async function loadModelsStats() {
             try {
-                const response = await apiRequest('/admin/models/stats');
+                const response = await authFetch(`${API_BASE}/admin/models/stats`);
                 const stats = await response.json();
 
                 document.getElementById('totalModels').textContent = stats.totalModels || 0;
@@ -2731,7 +2731,7 @@
             if (!confirm('确定要从API获取模型列表吗？这将覆盖现有配置。')) return;
 
             try {
-                const response = await apiRequest('/admin/models/fetch', {
+                const response = await authFetch(`${API_BASE}/admin/models/fetch`, {
                     method: 'POST'
                 });
 
@@ -2758,7 +2758,7 @@
             }
 
             try {
-                const response = await apiRequest(`/admin/models/${modelId}/quota`, {
+                const response = await authFetch(`${API_BASE}/admin/models/${modelId}/quota`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ quota })
@@ -2779,7 +2779,7 @@
         // 启用/禁用模型
         async function toggleModel(modelId, enabled) {
             try {
-                const response = await apiRequest(`/admin/models/${modelId}/toggle`, {
+                const response = await authFetch(`${API_BASE}/admin/models/${modelId}/toggle`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ enabled })
