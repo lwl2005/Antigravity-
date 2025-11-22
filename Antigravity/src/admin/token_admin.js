@@ -3,6 +3,7 @@ import AdmZip from 'adm-zip';
 import path from 'path';
 import { spawn } from 'child_process';
 import logger from '../utils/logger.js';
+import tokenManager from '../auth/token_manager.js';
 
 const ACCOUNTS_FILE = path.join(process.cwd(), 'data', 'accounts.json');
 
@@ -38,7 +39,8 @@ export async function deleteAccount(index) {
   }
   accounts.splice(index, 1);
   await saveAccounts(accounts);
-  logger.info(`账号 ${index} 已删除`);
+  tokenManager.forceReload(); // 强制刷新token管理器
+  logger.info(`账号 ${index} 已删除，token管理器已刷新`);
   return true;
 }
 
@@ -50,7 +52,21 @@ export async function toggleAccount(index, enable) {
   }
   accounts[index].enable = enable;
   await saveAccounts(accounts);
-  logger.info(`账号 ${index} 已${enable ? '启用' : '禁用'}`);
+  tokenManager.forceReload(); // 强制刷新token管理器
+  logger.info(`账号 ${index} 已${enable ? '启用' : '禁用'}，token管理器已刷新`);
+  return true;
+}
+
+// 设置token的代理
+export async function setTokenProxy(index, proxyId) {
+  const accounts = await loadAccounts();
+  if (index < 0 || index >= accounts.length) {
+    throw new Error('无效的账号索引');
+  }
+  accounts[index].proxyId = proxyId || null;
+  await saveAccounts(accounts);
+  tokenManager.forceReload(); // 强制刷新token管理器
+  logger.info(`账号 ${index} 的代理已设置为: ${proxyId || '无'}`);
   return true;
 }
 
@@ -183,8 +199,9 @@ export async function addTokenFromCallback(callbackUrl) {
   const accounts = await loadAccounts();
   accounts.push(account);
   await saveAccounts(accounts);
+  tokenManager.forceReload(); // 强制刷新token管理器
 
-  logger.info('Token 已成功保存');
+  logger.info('Token 已成功保存，token管理器已刷新');
   return { success: true, message: 'Token 已成功添加' };
 }
 
@@ -275,6 +292,7 @@ export async function importTokens(filePath) {
 
       // 保存账号
       await saveAccounts(accounts);
+      tokenManager.forceReload(); // 强制刷新token管理器
 
       // 清理上传的文件
       try {
@@ -283,7 +301,7 @@ export async function importTokens(filePath) {
         logger.warn('清理上传文件失败:', e);
       }
 
-      logger.info(`成功导入 ${addedCount} 个 Token 账号`);
+      logger.info(`成功导入 ${addedCount} 个 Token 账号，token管理器已刷新`);
       return {
         success: true,
         count: addedCount,

@@ -41,7 +41,7 @@ async function saveKeys(keys) {
 }
 
 // 创建新密钥
-export async function createKey(name = '未命名', rateLimit = null) {
+export async function createKey(name = '未命名', rateLimit = null, maxBalance = null) {
   const keys = await loadKeys();
   const newKey = {
     key: generateApiKey(),
@@ -50,11 +50,16 @@ export async function createKey(name = '未命名', rateLimit = null) {
     lastUsed: null,
     requests: 0,
     rateLimit: rateLimit || { enabled: false, maxRequests: 100, windowMs: 60000 }, // 默认 100 次/分钟
-    usage: {} // 用于存储使用记录 { timestamp: count }
+    usage: {}, // 用于存储使用记录 { timestamp: count }
+    // 计费相关
+    balance: maxBalance || 0, // 当前余额（美元）
+    maxBalance: maxBalance || 10, // 费用上限（美元），默认10美元
+    totalSpent: 0, // 总消费（美元）
+    isUnlimited: maxBalance === null || maxBalance === -1 // 无限额度
   };
   keys.push(newKey);
   await saveKeys(keys);
-  logger.info(`新密钥已创建: ${name}`);
+  logger.info(`新密钥已创建: ${name}, 额度: ${maxBalance === null || maxBalance === -1 ? '无限' : '$' + maxBalance}`);
   return newKey;
 }
 
@@ -163,4 +168,105 @@ export async function checkRateLimit(keyToCheck) {
     limit: maxRequests,
     remaining: maxRequests - requestCount - 1
   };
+}
+
+// ========== 计费相关功能 ==========
+
+// 根据key获取完整信息
+export async function getKey(keyToFind) {
+  const keys = await loadKeys();
+  return keys.find(k => k.key === keyToFind);
+}
+
+// 检查余额是否足够
+export async function checkBalance(keyToCheck) {
+  const key = await getKey(keyToCheck);
+  if (!key) {
+    return { allowed: false, error: '密钥不存在' };
+  }
+
+  // 无限额度的key直接允许
+  if (key.isUnlimited) {
+    return { allowed: true, unlimited: true };
+  }
+
+  // 检查余额是否充足
+  if (key.balance <= 0) {
+    return {
+      allowed: false,
+      error: '余额不足',
+      balance: key.balance,
+      maxBalance: key.maxBalance
+    };
+  }
+
+  return {
+    allowed: true,
+    balance: key.balance,
+    maxBalance: key.maxBalance
+  };
+}
+
+// 扣除余额
+export async function deductBalance(keyToUpdate, amount) {
+  const keys = await loadKeys();
+  const key = keys.find(k => k.key === keyToUpdate);
+
+  if (!key) {
+    throw new Error('密钥不存在');
+  }
+
+  // 无限额度的key不扣费
+  if (key.isUnlimited) {
+    return key;
+  }
+
+  key.balance = Math.max(0, key.balance - amount);
+  key.totalSpent = (key.totalSpent || 0) + amount;
+
+  await saveKeys(keys);
+  return key;
+}
+
+// 充值（增加余额）
+export async function addBalance(keyToUpdate, amount) {
+  const keys = await loadKeys();
+  const key = keys.find(k => k.key === keyToUpdate);
+
+  if (!key) {
+    throw new Error('密钥不存在');
+  }
+
+  key.balance = Math.min(key.maxBalance, key.balance + amount);
+  await saveKeys(keys);
+  logger.info(`密钥 ${keyToUpdate.substring(0, 10)}... 已充值 $${amount}`);
+  return key;
+}
+
+// 更新密钥余额上限
+export async function updateKeyBalance(keyToUpdate, maxBalance) {
+  const keys = await loadKeys();
+  const key = keys.find(k => k.key === keyToUpdate);
+
+  if (!key) {
+    throw new Error('密钥不存在');
+  }
+
+  const oldMaxBalance = key.maxBalance;
+  key.maxBalance = maxBalance;
+  key.isUnlimited = maxBalance === null || maxBalance === -1;
+
+  // 如果新上限更高，自动补充余额
+  if (!key.isUnlimited && maxBalance > oldMaxBalance) {
+    key.balance = Math.min(maxBalance, key.balance + (maxBalance - oldMaxBalance));
+  }
+
+  // 如果新上限更低，限制当前余额
+  if (!key.isUnlimited && maxBalance < key.balance) {
+    key.balance = maxBalance;
+  }
+
+  await saveKeys(keys);
+  logger.info(`密钥 ${keyToUpdate.substring(0, 10)}... 额度已更新: ${key.isUnlimited ? '无限' : '$' + maxBalance}`);
+  return key;
 }

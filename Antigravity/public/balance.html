@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>余额查询 - Antigravity API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #111827;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            margin-bottom: 60px;
+            text-align: left;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            color: #000;
+        }
+
+        .header p {
+            font-size: 20px;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .header-highlight {
+            color: #6366f1;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #111827;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #111827;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        button {
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #4f46e5;
+        }
+
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #fff;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .status-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-card h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .status-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .status-card .value.green {
+            color: #10b981;
+        }
+
+        .status-card .value.red {
+            color: #ef4444;
+        }
+
+        .status-card .value.orange {
+            color: #f59e0b;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #dbeafe;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #d1fae5;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fee2e2;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-overlay.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e5e7eb;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: #f9fafb;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #111827;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .pagination span {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .code-block {
+            background: #f3f4f6;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            border: 1px solid #e5e7eb;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <h2 style="margin-bottom: 8px; font-size: 28px; font-weight: 700;">余额查询</h2>
+            <p style="color: #6b7280; margin-bottom: 24px;">请输入您的 API 密钥以查看余额和消费历史</p>
+            <div class="form-group" style="text-align: left;">
+                <label>API 密钥</label>
+                <input type="password" id="loginApiKey" placeholder="sk-..."
+                    onkeypress="if(event.key==='Enter')doLogin()">
+            </div>
+            <button onclick="doLogin()" id="loginBtn" style="width: 100%;">查询</button>
+            <div id="loginError" style="color: #ef4444; margin-top: 12px; font-size: 14px;"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="container hidden">
+        <div class="header">
+            <h1>API 余额查询</h1>
+            <p>查看您的<span class="header-highlight">剩余额度</span>和<span class="header-highlight">消费历史</span></p>
+            <div style="margin-top: 20px;">
+                <button onclick="doLogout()" class="btn-secondary" style="font-size: 14px; padding: 8px 16px;">退出</button>
+                <button onclick="loadBalance()" class="btn-secondary" style="font-size: 14px; padding: 8px 16px; margin-left: 8px;">刷新</button>
+            </div>
+        </div>
+
+        <!-- Balance Info -->
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>当前余额</h3>
+                <div class="value" id="balance">-</div>
+                <small style="color: #6b7280; display: block; margin-top: 8px;">
+                    上限: $<span id="maxBalance">-</span>
+                </small>
+            </div>
+            <div class="status-card">
+                <h3>总消费</h3>
+                <div class="value" id="totalSpent">-</div>
+            </div>
+            <div class="status-card">
+                <h3>总请求数</h3>
+                <div class="value" id="totalRequests">-</div>
+            </div>
+            <div class="status-card">
+                <h3>平均费用</h3>
+                <div class="value" id="averageCost">-</div>
+                <small style="color: #6b7280; display: block; margin-top: 8px;">每次请求</small>
+            </div>
+        </div>
+
+        <!-- API Key Info -->
+        <div class="card">
+            <h3>密钥信息</h3>
+            <div style="margin-bottom: 12px;">
+                <strong style="color: #374151;">名称:</strong>
+                <span id="keyName" style="color: #111827; margin-left: 8px;">-</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <strong style="color: #374151;">密钥:</strong>
+                <div class="code-block" id="keyDisplay" style="margin-top: 8px;">-</div>
+            </div>
+            <div>
+                <strong style="color: #374151;">状态:</strong>
+                <span id="keyStatus" style="margin-left: 8px;">-</span>
+            </div>
+        </div>
+
+        <!-- Token Usage -->
+        <div class="card">
+            <h3>Token 使用统计</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div style="padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 4px;">输入 Token</div>
+                    <div style="color: #111827; font-size: 24px; font-weight: 600;" id="totalInputTokens">-</div>
+                </div>
+                <div style="padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 4px;">输出 Token</div>
+                    <div style="color: #111827; font-size: 24px; font-weight: 600;" id="totalOutputTokens">-</div>
+                </div>
+                <div style="padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 4px;">总 Token</div>
+                    <div style="color: #111827; font-size: 24px; font-weight: 600;" id="totalTokens">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage History -->
+        <div class="card">
+            <h3>消费历史</h3>
+            <div id="usageTableContainer">
+                <table id="usageTable">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>模型</th>
+                            <th>输入 Token</th>
+                            <th>输出 Token</th>
+                            <th>总 Token</th>
+                            <th>费用 (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usageTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #9ca3af; padding: 40px;">
+                                加载中...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <button id="prevBtn" onclick="previousPage()" disabled>上一页</button>
+                <span id="pageInfo">第 1 页</span>
+                <button id="nextBtn" onclick="nextPage()">下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let apiKey = '';
+        let currentPage = 0;
+        const pageSize = 20;
+        let totalLogs = 0;
+
+        // Login
+        async function doLogin() {
+            const key = document.getElementById('loginApiKey').value.trim();
+            const errorEl = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+
+            if (!key) {
+                errorEl.textContent = '请输入 API 密钥';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '验证中...';
+            errorEl.textContent = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/user/balance`, {
+                    headers: {
+                        'Authorization': `Bearer ${key}`
+                    }
+                });
+
+                if (response.ok) {
+                    apiKey = key;
+                    localStorage.setItem('userApiKey', apiKey);
+                    document.getElementById('loginOverlay').classList.add('hidden');
+                    document.getElementById('mainContent').classList.remove('hidden');
+                    await loadBalance();
+                    await loadUsage();
+                } else {
+                    const data = await response.json();
+                    errorEl.textContent = data.error || '密钥验证失败';
+                }
+            } catch (error) {
+                errorEl.textContent = '验证失败: ' + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '查询';
+            }
+        }
+
+        // Logout
+        function doLogout() {
+            apiKey = '';
+            localStorage.removeItem('userApiKey');
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('loginApiKey').value = '';
+            currentPage = 0;
+        }
+
+        // Load Balance
+        async function loadBalance() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/user/balance`, {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('加载余额失败');
+                }
+
+                const data = await response.json();
+
+                // Update balance display
+                const balance = data.balance || 0;
+                const maxBalance = data.maxBalance || 0;
+                const balanceEl = document.getElementById('balance');
+                balanceEl.textContent = data.isUnlimited ? '∞' : `$${balance.toFixed(2)}`;
+
+                if (data.isUnlimited) {
+                    balanceEl.className = 'value green';
+                } else if (balance <= 0) {
+                    balanceEl.className = 'value red';
+                } else if (balance < maxBalance * 0.2) {
+                    balanceEl.className = 'value orange';
+                } else {
+                    balanceEl.className = 'value green';
+                }
+
+                document.getElementById('maxBalance').textContent = data.isUnlimited ? '无限' : maxBalance.toFixed(2);
+                document.getElementById('totalSpent').textContent = `$${(data.totalSpent || 0).toFixed(6)}`;
+                document.getElementById('totalRequests').textContent = data.totalRequests || 0;
+                document.getElementById('averageCost').textContent = `$${(data.averageCost || 0).toFixed(6)}`;
+
+                // Token stats
+                document.getElementById('totalInputTokens').textContent = (data.totalInputTokens || 0).toLocaleString();
+                document.getElementById('totalOutputTokens').textContent = (data.totalOutputTokens || 0).toLocaleString();
+                document.getElementById('totalTokens').textContent = (data.totalTokens || 0).toLocaleString();
+
+                // Key info
+                document.getElementById('keyName').textContent = data.name || '未命名';
+                document.getElementById('keyDisplay').textContent = apiKey;
+
+                const statusEl = document.getElementById('keyStatus');
+                if (data.isUnlimited) {
+                    statusEl.innerHTML = '<span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px;">无限额度</span>';
+                } else if (balance <= 0) {
+                    statusEl.innerHTML = '<span style="background: #ef4444; color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px;">余额不足</span>';
+                } else if (balance < maxBalance * 0.2) {
+                    statusEl.innerHTML = '<span style="background: #f59e0b; color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px;">余额偏低</span>';
+                } else {
+                    statusEl.innerHTML = '<span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px;">正常</span>';
+                }
+            } catch (error) {
+                console.error('加载余额失败:', error);
+                alert('加载余额失败: ' + error.message);
+            }
+        }
+
+        // Load Usage
+        async function loadUsage() {
+            try {
+                const offset = currentPage * pageSize;
+                const response = await fetch(`${API_BASE}/admin/user/usage?limit=${pageSize}&offset=${offset}`, {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('加载消费记录失败');
+                }
+
+                const data = await response.json();
+                totalLogs = data.total || 0;
+                const logs = data.logs || [];
+
+                const tbody = document.getElementById('usageTableBody');
+
+                if (logs.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #9ca3af; padding: 40px;">
+                                ${currentPage === 0 ? '暂无消费记录' : '没有更多记录'}
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    tbody.innerHTML = logs.map(log => `
+                        <tr>
+                            <td>${new Date(log.timestamp).toLocaleString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            })}</td>
+                            <td>${log.model || '-'}</td>
+                            <td>${(log.inputTokens || 0).toLocaleString()}</td>
+                            <td>${(log.outputTokens || 0).toLocaleString()}</td>
+                            <td><strong>${(log.totalTokens || 0).toLocaleString()}</strong></td>
+                            <td><strong style="color: #6366f1;">$${(log.cost || 0).toFixed(6)}</strong></td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Update pagination
+                const totalPages = Math.ceil(totalLogs / pageSize);
+                document.getElementById('pageInfo').textContent = totalPages > 0
+                    ? `第 ${currentPage + 1} / ${totalPages} 页 (共 ${totalLogs} 条)`
+                    : '无记录';
+                document.getElementById('prevBtn').disabled = currentPage === 0;
+                document.getElementById('nextBtn').disabled = (currentPage + 1) * pageSize >= totalLogs;
+            } catch (error) {
+                console.error('加载消费记录失败:', error);
+                document.getElementById('usageTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #ef4444; padding: 40px;">
+                            加载失败: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Pagination
+        function previousPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                loadUsage();
+            }
+        }
+
+        function nextPage() {
+            if ((currentPage + 1) * pageSize < totalLogs) {
+                currentPage++;
+                loadUsage();
+            }
+        }
+
+        // Auto-login if key is saved
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('userApiKey');
+            if (savedKey) {
+                document.getElementById('loginApiKey').value = savedKey;
+                doLogin();
+            }
+        });
+    </script>
+</body>
+
+</html>

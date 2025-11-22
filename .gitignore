@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+Antigravity/node_modules/
+
+# Runtime data
+Antigravity/data/
+*.log
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*.json
+test_*.py
+test_*.sh
+chat.py
+
+# Temporary files
+*.tmp
+*.bak
+*.png

@@ -1,13 +1,16 @@
 import express from 'express';
 import multer from 'multer';
 import archiver from 'archiver';
-import { createKey, loadKeys, deleteKey, updateKeyRateLimit, getKeyStats } from './key_manager.js';
+import { createKey, loadKeys, deleteKey, updateKeyRateLimit, getKeyStats, updateKeyBalance, addBalance, getKey } from './key_manager.js';
+import { getUsageByKey, getUsageStats } from './usage_logger.js';
+import { loadPricing, updateModelPricing, deleteModelPricing, resetPricing, addModelPricing } from './pricing_manager.js';
 import { getRecentLogs, clearLogs, addLog } from './log_manager.js';
 import { getSystemStatus, incrementRequestCount } from './monitor.js';
-import { loadAccounts, deleteAccount, toggleAccount, triggerLogin, getAccountStats, addTokenFromCallback, getAccountName, importTokens } from './token_admin.js';
+import { loadAccounts, deleteAccount, toggleAccount, setTokenProxy, triggerLogin, getAccountStats, addTokenFromCallback, getAccountName, importTokens } from './token_admin.js';
 import { createSession, validateSession, destroySession, verifyPassword, adminAuth } from './session.js';
 import { loadSettings, saveSettings } from './settings_manager.js';
 import tokenManager from '../auth/token_manager.js';
+import proxyManager from './proxy_manager.js';
 
 // 配置文件上传
 const upload = multer({ dest: 'uploads/' });
@@ -54,16 +57,72 @@ router.get('/verify', (req, res) => {
   }
 });
 
+// ========== 用户查询API（使用API key认证，不需要管理员权限）==========
+
+// 用户查询自己的余额和统计
+router.get('/user/balance', async (req, res) => {
+  try {
+    const apiKey = req.headers.authorization?.replace('Bearer ', '');
+    if (!apiKey) {
+      return res.status(401).json({ error: 'Missing API Key' });
+    }
+
+    const keyInfo = await getKey(apiKey);
+    if (!keyInfo) {
+      return res.status(404).json({ error: 'API Key not found' });
+    }
+
+    const stats = await getUsageStats(apiKey);
+
+    res.json({
+      name: keyInfo.name,
+      balance: keyInfo.balance,
+      maxBalance: keyInfo.maxBalance,
+      totalSpent: keyInfo.totalSpent,
+      isUnlimited: keyInfo.isUnlimited,
+      ...stats
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 用户查询自己的使用日志
+router.get('/user/usage', async (req, res) => {
+  try {
+    const apiKey = req.headers.authorization?.replace('Bearer ', '');
+    if (!apiKey) {
+      return res.status(401).json({ error: 'Missing API Key' });
+    }
+
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+
+    const result = await getUsageByKey(apiKey, limit, offset);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 以下所有路由需要认证
 router.use(adminAuth);
 
 // 生成新密钥
 router.post('/keys/generate', async (req, res) => {
   try {
-    const { name, rateLimit } = req.body;
-    const newKey = await createKey(name, rateLimit);
-    await addLog('success', `密钥已生成: ${name || '未命名'}`);
-    res.json({ success: true, key: newKey.key, name: newKey.name, rateLimit: newKey.rateLimit });
+    const { name, rateLimit, maxBalance } = req.body;
+    const newKey = await createKey(name, rateLimit, maxBalance);
+    await addLog('success', `密钥已生成: ${name || '未命名'}, 额度: ${maxBalance === null || maxBalance === -1 ? '无限' : '$' + maxBalance}`);
+    res.json({
+      success: true,
+      key: newKey.key,
+      name: newKey.name,
+      rateLimit: newKey.rateLimit,
+      balance: newKey.balance,
+      maxBalance: newKey.maxBalance,
+      isUnlimited: newKey.isUnlimited
+    });
   } catch (error) {
     await addLog('error', `生成密钥失败: ${error.message}`);
     res.status(500).json({ error: error.message });
@@ -271,7 +330,8 @@ router.post('/tokens/details', async (req, res) => {
           refresh_token: account.refresh_token,
           expires_in: account.expires_in,
           timestamp: account.timestamp,
-          enable: account.enable !== false
+          enable: account.enable !== false,
+          proxyId: account.proxyId || null
         });
       }
     }
@@ -362,6 +422,309 @@ router.post('/settings', async (req, res) => {
     res.json(result);
   } catch (error) {
     await addLog('error', `保存设置失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 代理管理路由
+
+// 获取所有代理
+router.get('/proxies', async (req, res) => {
+  try {
+    const proxies = proxyManager.getAllProxies();
+    res.json(proxies);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 添加代理
+router.post('/proxies', async (req, res) => {
+  try {
+    const proxy = await proxyManager.addProxy(req.body);
+    await addLog('success', `代理已添加: ${proxy.name}`);
+    res.json({ success: true, proxy });
+  } catch (error) {
+    await addLog('error', `添加代理失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 更新代理
+router.patch('/proxies/:id', async (req, res) => {
+  try {
+    const proxy = await proxyManager.updateProxy(req.params.id, req.body);
+    await addLog('info', `代理已更新: ${proxy.name}`);
+    res.json({ success: true, proxy });
+  } catch (error) {
+    await addLog('error', `更新代理失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 删除代理
+router.delete('/proxies/:id', async (req, res) => {
+  try {
+    const proxy = await proxyManager.deleteProxy(req.params.id);
+    await addLog('warn', `代理已删除: ${proxy.name}`);
+    res.json({ success: true });
+  } catch (error) {
+    await addLog('error', `删除代理失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 测试单个代理
+router.post('/proxies/:id/test', async (req, res) => {
+  try {
+    const proxy = proxyManager.getProxyById(req.params.id);
+    if (!proxy) {
+      return res.status(404).json({ error: '代理不存在' });
+    }
+    const result = await proxyManager.testProxy(proxy);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 测试所有代理
+router.post('/proxies/test-all', async (req, res) => {
+  try {
+    const results = await proxyManager.testAllProxies();
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 为Token设置代理
+router.patch('/tokens/:index/proxy', async (req, res) => {
+  try {
+    const index = parseInt(req.params.index);
+    const { proxyId } = req.body;
+    await setTokenProxy(index, proxyId);
+    await addLog('info', `Token ${index} 的代理已设置`);
+    res.json({ success: true });
+  } catch (error) {
+    await addLog('error', `设置Token代理失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== Session 管理 API ==========
+
+// 获取所有 session 绑定信息
+router.get('/sessions', adminAuth, async (req, res) => {
+  try {
+    const bindings = tokenManager.getSessionBindings();
+    res.json(bindings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 释放指定 session
+router.delete('/sessions/:sessionId', adminAuth, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    tokenManager.releaseSession(sessionId);
+    await addLog('info', `Session ${sessionId.substring(0, 8)}... 已手动释放`);
+    res.json({ success: true, message: 'Session 已释放' });
+  } catch (error) {
+    await addLog('error', `释放 Session 失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 释放所有 session
+router.delete('/sessions', adminAuth, async (req, res) => {
+  try {
+    const bindings = tokenManager.getSessionBindings();
+    let count = 0;
+    for (const binding of bindings) {
+      tokenManager.releaseSession(binding.sessionId);
+      count++;
+    }
+    await addLog('info', `已手动释放 ${count} 个 Session`);
+    res.json({ success: true, message: `已释放 ${count} 个 Session` });
+  } catch (error) {
+    await addLog('error', `批量释放 Session 失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== 余额管理和使用日志 API ==========
+
+// 更新密钥余额上限
+router.patch('/keys/:key/balance', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { maxBalance } = req.body;
+
+    if (maxBalance === undefined || maxBalance === null) {
+      return res.status(400).json({ error: '请提供余额上限' });
+    }
+
+    const updatedKey = await updateKeyBalance(key, maxBalance);
+    await addLog('success', `密钥余额上限已更新: ${key.substring(0, 10)}..., 新额度: ${updatedKey.isUnlimited ? '无限' : '$' + maxBalance}`);
+
+    res.json({
+      success: true,
+      balance: updatedKey.balance,
+      maxBalance: updatedKey.maxBalance,
+      isUnlimited: updatedKey.isUnlimited
+    });
+  } catch (error) {
+    await addLog('error', `更新余额上限失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 充值
+router.post('/keys/:key/recharge', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: '请提供有效的充值金额' });
+    }
+
+    const updatedKey = await addBalance(key, amount);
+    await addLog('success', `密钥已充值: ${key.substring(0, 10)}..., 金额: $${amount}`);
+
+    res.json({
+      success: true,
+      balance: updatedKey.balance,
+      maxBalance: updatedKey.maxBalance
+    });
+  } catch (error) {
+    await addLog('error', `充值失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 查询密钥使用日志（管理员）
+router.get('/keys/:key/usage', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+
+    const result = await getUsageByKey(key, limit, offset);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 查询密钥使用统计（管理员）
+router.get('/keys/:key/stats', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const stats = await getUsageStats(key);
+
+    // 也获取key的基本信息
+    const keyInfo = await getKey(key);
+
+    res.json({
+      ...stats,
+      balance: keyInfo?.balance || 0,
+      maxBalance: keyInfo?.maxBalance || 0,
+      totalSpent: keyInfo?.totalSpent || 0,
+      isUnlimited: keyInfo?.isUnlimited || false
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== 定价管理 API ==========
+
+// 获取所有模型定价
+router.get('/pricing', async (req, res) => {
+  try {
+    const pricing = await loadPricing();
+    res.json(pricing);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 更新模型定价
+router.patch('/pricing/:model', async (req, res) => {
+  try {
+    const { model } = req.params;
+    const { input, output } = req.body;
+
+    if (input === undefined || output === undefined) {
+      return res.status(400).json({ error: '请提供输入和输出token价格' });
+    }
+
+    const updatedPricing = await updateModelPricing(model, input, output);
+    await addLog('success', `模型 ${model} 定价已更新: input=$${input}/M, output=$${output}/M`);
+
+    res.json({
+      success: true,
+      model,
+      pricing: updatedPricing
+    });
+  } catch (error) {
+    await addLog('error', `更新定价失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 添加新模型定价
+router.post('/pricing', async (req, res) => {
+  try {
+    const { model, input, output } = req.body;
+
+    if (!model || input === undefined || output === undefined) {
+      return res.status(400).json({ error: '请提供模型名称、输入和输出token价格' });
+    }
+
+    const newPricing = await addModelPricing(model, input, output);
+    await addLog('success', `新模型 ${model} 定价已添加: input=$${input}/M, output=$${output}/M`);
+
+    res.json({
+      success: true,
+      model,
+      pricing: newPricing
+    });
+  } catch (error) {
+    await addLog('error', `添加定价失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 删除模型定价
+router.delete('/pricing/:model', async (req, res) => {
+  try {
+    const { model } = req.params;
+    await deleteModelPricing(model);
+    await addLog('info', `模型 ${model} 定价已删除，将使用默认定价`);
+
+    res.json({ success: true });
+  } catch (error) {
+    await addLog('error', `删除定价失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 重置所有定价为默认值
+router.post('/pricing/reset', async (req, res) => {
+  try {
+    const defaultPricing = await resetPricing();
+    await addLog('warn', '所有定价已重置为默认值');
+
+    res.json({
+      success: true,
+      pricing: defaultPricing
+    });
+  } catch (error) {
+    await addLog('error', `重置定价失败: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
