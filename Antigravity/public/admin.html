@@ -116,12 +116,6 @@
 
 
 
-            <div class="card">
-                <h3>Token 监控</h3>
-                <div id="tokenUsageStats">
-                    <div style="text-align: center; color: #999; padding: 20px;">加载中...</div>
-                </div>
-            </div>
 
             <div class="card">
                 <h3>系统信息</h3>
@@ -1290,36 +1284,38 @@
 
                 // 显示 Token 使用统计
                 const usageContainer = document.getElementById('tokenUsageStats');
-                if (usageData.totalTokens === 0 || !usageData.tokens || usageData.tokens.length === 0) {
-                    usageContainer.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无 Token 账号</div>';
-                } else {
-                    usageContainer.innerHTML = `
-            <div style="margin-bottom: 15px;">
-              <span style="background: #667eea; color: white; padding: 5px 12px; border-radius: 4px; margin-right: 10px;">
-                总 Token 数: ${usageData.totalTokens}
-              </span>
-              <span style="background: #27ae60; color: white; padding: 5px 12px; border-radius: 4px; margin-right: 10px;">
-                当前轮询位置: #${usageData.currentIndex}
-              </span>
-              <span style="background: #3498db; color: white; padding: 5px 12px; border-radius: 4px;">
-                总请求数: ${usageData.totalRequests}
-              </span>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-              ${(usageData.tokens || []).map(token => `
-                <div style="padding: 15px; background: ${token.isCurrent ? '#e8f4fd' : '#f8f9fa'}; border-radius: 8px; border-left: 3px solid ${token.isCurrent ? '#3498db' : '#95a5a6'};">
-                  <div style="color: #2c3e50; font-weight: 600; margin-bottom: 8px;">
-                    Token #${token.index}
-                    ${token.isCurrent ? '<span style="background: #3498db; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 5px;">当前</span>' : ''}
-                  </div>
-                  <div style="color: #7f8c8d; font-size: 0.9em;">
-                    <div>请求次数: <strong style="color: #667eea;">${token.requests}</strong></div>
-                    <div>最后使用: ${token.lastUsed ? new Date(token.lastUsed).toLocaleString() : '从未使用'}</div>
-                  </div>
+                if (usageContainer) {
+                    if (usageData.totalTokens === 0 || !usageData.tokens || usageData.tokens.length === 0) {
+                        usageContainer.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无 Token 账号</div>';
+                    } else {
+                        usageContainer.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                  <span style="background: #667eea; color: white; padding: 5px 12px; border-radius: 4px; margin-right: 10px;">
+                    总 Token 数: ${usageData.totalTokens}
+                  </span>
+                  <span style="background: #27ae60; color: white; padding: 5px 12px; border-radius: 4px; margin-right: 10px;">
+                    当前轮询位置: #${usageData.currentIndex}
+                  </span>
+                  <span style="background: #3498db; color: white; padding: 5px 12px; border-radius: 4px;">
+                    总请求数: ${usageData.totalRequests}
+                  </span>
                 </div>
-              `).join('')}
-            </div>
-          `;
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                  ${(usageData.tokens || []).map(token => `
+                    <div style="padding: 15px; background: ${token.isCurrent ? '#e8f4fd' : '#f8f9fa'}; border-radius: 8px; border-left: 3px solid ${token.isCurrent ? '#3498db' : '#95a5a6'};">
+                      <div style="color: #2c3e50; font-weight: 600; margin-bottom: 8px;">
+                        Token #${token.index}
+                        ${token.isCurrent ? '<span style="background: #3498db; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 5px;">当前</span>' : ''}
+                      </div>
+                      <div style="color: #7f8c8d; font-size: 0.9em;">
+                        <div>请求次数: <strong style="color: #667eea;">${token.requests}</strong></div>
+                        <div>最后使用: ${token.lastUsed ? new Date(token.lastUsed).toLocaleString() : '从未使用'}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+                    }
                 }
 
                 document.getElementById('systemInfo').innerHTML = `
