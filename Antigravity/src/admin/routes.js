@@ -16,6 +16,7 @@ import { loadModels, fetchAndSaveModels, updateModelQuota, toggleModel, getModel
 import { getSecurityStats, unbanIP, unbanDevice, isIPBanned, isDeviceBanned } from './security_manager.js';
 import { isUserBanned, banUserFromSharing, unbanUser, recordShareUsage, getUserAverageUsage, checkAndBanAbuser, addToTokenBlacklist, removeFromTokenBlacklist, isUserBlacklisted, getTokenBlacklist, createVote, castVote, addVoteComment, processVoteResult, getActiveVotes, getVoteById, getUserVoteHistory, getAllVotes, getUserShareStatus } from './share_manager.js';
 import { registerUser, loginUser, getUserById, getUserByUsername, generateUserApiKey, deleteUserApiKey, getUserApiKeys, validateUserApiKey, updateUser, deleteUser, getUserStats, getAllUsers, toggleUserStatus, loginOrRegisterWithGoogle, getUserTokens, addUserToken, deleteUserToken, getUserAvailableToken } from './user_manager.js';
+import { loadAIConfig, saveAIConfig, runAIModeration, getAIModerationLogs, getAIStatistics, startAIScheduler, stopAIScheduler, restartAIScheduler } from './ai_moderator.js';
 
 // 配置文件上传
 const upload = multer({ dest: 'uploads/' });
@@ -1461,6 +1462,116 @@ router.get('/users/:userId/available-token', async (req, res) => {
     }
     res.json({ token });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== AI 审核系统 API ==========
+
+// 获取AI配置
+router.get('/ai-moderator/config', async (req, res) => {
+  try {
+    const config = await loadAIConfig();
+    // 隐藏API密钥
+    const safeConfig = {
+      ...config,
+      apiKey: config.apiKey ? '***已配置***' : ''
+    };
+    res.json(safeConfig);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 更新AI配置
+router.post('/ai-moderator/config', async (req, res) => {
+  try {
+    const config = req.body;
+
+    // 如果API密钥是占位符,保留原密钥
+    if (config.apiKey === '***已配置***') {
+      const oldConfig = await loadAIConfig();
+      config.apiKey = oldConfig.apiKey;
+    }
+
+    await saveAIConfig(config);
+    await addLog('success', 'AI审核配置已更新');
+
+    // 重启调度器应用新配置
+    await restartAIScheduler();
+
+    res.json({ success: true, message: '配置已保存并应用' });
+  } catch (error) {
+    await addLog('error', `保存AI配置失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 手动触发AI审核
+router.post('/ai-moderator/run', async (req, res) => {
+  try {
+    await addLog('info', '手动触发AI审核');
+    const result = await runAIModeration(true);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `AI审核失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取AI审核日志
+router.get('/ai-moderator/logs', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    const logs = await getAIModerationLogs(limit);
+    res.json({ logs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 获取AI审核统计
+router.get('/ai-moderator/stats', async (req, res) => {
+  try {
+    const stats = await getAIStatistics();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 启动AI调度器
+router.post('/ai-moderator/scheduler/start', async (req, res) => {
+  try {
+    startAIScheduler();
+    await addLog('success', 'AI调度器已启动');
+    res.json({ success: true, message: 'AI调度器已启动' });
+  } catch (error) {
+    await addLog('error', `启动AI调度器失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 停止AI调度器
+router.post('/ai-moderator/scheduler/stop', async (req, res) => {
+  try {
+    stopAIScheduler();
+    await addLog('info', 'AI调度器已停止');
+    res.json({ success: true, message: 'AI调度器已停止' });
+  } catch (error) {
+    await addLog('error', `停止AI调度器失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 重启AI调度器
+router.post('/ai-moderator/scheduler/restart', async (req, res) => {
+  try {
+    await restartAIScheduler();
+    await addLog('info', 'AI调度器已重启');
+    res.json({ success: true, message: 'AI调度器已重启' });
+  } catch (error) {
+    await addLog('error', `重启AI调度器失败: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
