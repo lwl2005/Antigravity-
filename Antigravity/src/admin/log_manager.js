@@ -35,7 +35,8 @@ export async function loadLogs() {
     lastCacheTime = now;
     return logsCache;
   } catch (error) {
-    if (error.code === 'ENOENT') {
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) {
+      // 文件不存在或 JSON 格式错误，返回空数组
       logsCache = [];
       lastCacheTime = now;
       return [];
