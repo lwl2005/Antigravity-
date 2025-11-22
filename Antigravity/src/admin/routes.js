@@ -1476,5 +1476,106 @@ router.post('/read-folder', adminAuth, async (req, res) => {
   }
 });
 
+// 编辑文件内容
+router.post('/edit-file', adminAuth, async (req, res) => {
+  try {
+    // 参数别名支持 - 同时支持 path 和 file_path
+    const filePath = req.body.file_path || req.body.path;
+    const oldString = req.body.old_string;
+    const newString = req.body.new_string;
+
+    if (!filePath) {
+      return res.status(400).json({
+        error: '缺少必需参数: file_path 或 path'
+      });
+    }
+
+    if (oldString === undefined || newString === undefined) {
+      return res.status(400).json({
+        error: '缺少必需参数: old_string 和 new_string'
+      });
+    }
+
+    // 安全检查 - 防止路径遍历攻击
+    const safePath = path.resolve(process.cwd(), filePath);
+    if (!safePath.startsWith(process.cwd())) {
+      await addLog('warn', `文件编辑被拒绝 - 路径越界: ${filePath}`);
+      return res.status(403).json({
+        error: '禁止访问该路径'
+      });
+    }
+
+    // 读取文件
+    const content = await fs.readFile(safePath, 'utf-8');
+
+    // 检查 old_string 是否存在
+    if (!content.includes(oldString)) {
+      return res.status(400).json({
+        error: '文件中未找到要替换的内容',
+        file_path: filePath
+      });
+    }
+
+    // 替换内容
+    const newContent = content.replace(oldString, newString);
+
+    // 写入文件
+    await fs.writeFile(safePath, newContent, 'utf-8');
+
+    await addLog('info', `编辑文件: ${filePath}`);
+    res.json({
+      success: true,
+      file_path: filePath,
+      message: '文件已成功编辑'
+    });
+  } catch (error) {
+    await addLog('error', `编辑文件失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 写入文件内容
+router.post('/write-file', adminAuth, async (req, res) => {
+  try {
+    // 参数别名支持 - 同时支持 path 和 file_path
+    const filePath = req.body.file_path || req.body.path;
+    const content = req.body.content;
+
+    if (!filePath) {
+      return res.status(400).json({
+        error: '缺少必需参数: file_path 或 path'
+      });
+    }
+
+    if (content === undefined) {
+      return res.status(400).json({
+        error: '缺少必需参数: content'
+      });
+    }
+
+    // 安全检查 - 防止路径遍历攻击
+    const safePath = path.resolve(process.cwd(), filePath);
+    if (!safePath.startsWith(process.cwd())) {
+      await addLog('warn', `文件写入被拒绝 - 路径越界: ${filePath}`);
+      return res.status(403).json({
+        error: '禁止访问该路径'
+      });
+    }
+
+    // 写入文件
+    await fs.writeFile(safePath, content, 'utf-8');
+
+    await addLog('info', `写入文件: ${filePath}`);
+    res.json({
+      success: true,
+      file_path: filePath,
+      message: '文件已成功写入'
+    });
+  } catch (error) {
+    await addLog('error', `写入文件失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
 export { incrementRequestCount, addLog };
