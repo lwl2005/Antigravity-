@@ -678,5 +678,10 @@
     "timestamp": "2025-11-22T16:50:41.293Z",
     "level": "info",
     "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:56:36.558Z",
+    "level": "info",
+    "message": "管理员登录成功"
   }
 ]

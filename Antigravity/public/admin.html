@@ -648,7 +648,9 @@
                             name: d.name,
                             proxyId: d.proxyId,
                             disabledUntil: d.disabledUntil,
-                            quotaExhausted: d.quotaExhausted
+                            quotaExhausted: d.quotaExhausted,
+                            dailyCost: d.dailyCost,
+                            totalCost: d.totalCost
                         };
                     });
                 } catch (e) {
@@ -665,7 +667,7 @@
                 }
 
                 container.innerHTML = tokens.map(token => {
-                    const accountInfo = accountNames[token.index] || { email: 'Unknown', name: 'Unknown', proxyId: null, disabledUntil: null, quotaExhausted: false };
+                    const accountInfo = accountNames[token.index] || { email: 'Unknown', name: 'Unknown', proxyId: null, disabledUntil: null, quotaExhausted: false, dailyCost: 0, totalCost: 0 };
                     const proxyOptions = proxies.map(p =>
                         `<option value="${p.id}" ${accountInfo.proxyId === p.id ? 'selected' : ''}>${p.name} (${p.protocol}://${p.host}:${p.port})</option>`
                     ).join('');
@@ -699,6 +701,8 @@
                         <strong style="color: #2c3e50;">${accountInfo.name}</strong>
                         <span style="color: #7f8c8d; font-size: 0.9em;">(${accountInfo.email})</span>
                         ${statusBadge}
+                        <span style="background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">今日: $${(accountInfo.dailyCost||0).toFixed(4)}</span>
+                        <span style="background: #8e44ad; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">累计: $${(accountInfo.totalCost||0).toFixed(4)}</span>
                     </div>
                     ${disabledInfo}
                 </div>

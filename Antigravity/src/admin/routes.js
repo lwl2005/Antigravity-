@@ -382,7 +382,9 @@ router.post('/tokens/details', async (req, res) => {
           enable: account.enable !== false,
           proxyId: account.proxyId || null,
           disabledUntil: account.disabledUntil || null,
-          quotaExhausted: account.quotaExhausted || false
+          quotaExhausted: account.quotaExhausted || false,
+          dailyCost: account.dailyCost || 0,
+          totalCost: account.totalCost || 0
         });
       }
     }
