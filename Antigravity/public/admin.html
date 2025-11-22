@@ -642,7 +642,13 @@
                     });
                     const details = await detailsResponse.json();
                     details.forEach(d => {
-                        accountNames[d.index] = { email: d.email, name: d.name, proxyId: d.proxyId };
+                        accountNames[d.index] = {
+                            email: d.email,
+                            name: d.name,
+                            proxyId: d.proxyId,
+                            disabledUntil: d.disabledUntil,
+                            quotaExhausted: d.quotaExhausted
+                        };
                     });
                 } catch (e) {
                     console.error('获取账号名称失败:', e);
