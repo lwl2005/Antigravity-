@@ -34,6 +34,11 @@ const app = express();
 
 app.use(express.json({ limit: config.security.maxRequestSize }));
 
+// 管理后台路由
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'admin.html'));
+});
+
 // 静态文件服务 - 提供管理控制台页面
 app.use(express.static(path.join(process.cwd(), 'public')));
 
