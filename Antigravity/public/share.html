@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity API - 共享中心</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
+      --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6;
+      --dark: #1e293b; --light: #f8fafc; --gray: #64748b; --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 50%, #fef3f2 100%); min-height: 100vh; color: var(--dark); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .header { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); padding: 40px; border-radius: 24px; box-shadow: var(--shadow-lg); margin-bottom: 32px; text-align: center; }
+    .header h1 { color: white; font-size: 2.2em; font-weight: 700; margin-bottom: 12px; }
+    .header p { color: rgba(255, 255, 255, 0.95); font-size: 1.15em; max-width: 600px; margin: 0 auto; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 32px; }
+    .stat-card { background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow); text-align: center; transition: transform 0.2s; }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .stat-card h4 { color: var(--gray); font-size: 0.85em; margin-bottom: 8px; text-transform: uppercase; font-weight: 600; }
+    .stat-value { font-size: 2.2em; font-weight: 700; background: linear-gradient(135deg, var(--success) 0%, #059669 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .card { background: white; padding: 28px; border-radius: 16px; margin-bottom: 24px; box-shadow: var(--shadow); }
+    .card h3 { color: var(--dark); margin-bottom: 20px; font-size: 1.3em; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .token-item { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; margin-bottom: 14px; border-radius: 12px; border: 2px solid var(--border); transition: all 0.2s; }
+    .token-item:hover { border-color: var(--success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); }
+    .token-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .token-owner { font-weight: 600; color: var(--dark); font-size: 1.05em; }
+    .token-email { color: var(--gray); font-size: 0.85em; margin-top: 2px; }
+    .progress-container { margin-top: 12px; }
+    .progress-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85em; color: var(--gray); }
+    .progress-bar-bg { background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--success) 0%, #059669 100%); transition: width 0.3s ease; border-radius: 5px; }
+    .status-badge { padding: 5px 10px; border-radius: 6px; font-size: 0.8em; font-weight: 600; }
+    .status-available { background: #d1fae5; color: #065f46; }
+    .status-limited { background: #fef3c7; color: #92400e; }
+    .status-full { background: #fee2e2; color: #991b1b; }
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--gray); }
+    .empty-state h3 { font-size: 1.2em; margin-bottom: 8px; color: var(--dark); }
+    .alert { padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px; }
+    .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .nav-link { display: inline-block; margin: 10px 8px; padding: 12px 24px; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s; }
+    .nav-link:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); }
+    .vote-item { background: #f8fafc; padding: 18px; border-radius: 12px; margin-bottom: 14px; border: 1px solid var(--border); }
+    .vote-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+    .vote-target { font-weight: 600; color: var(--dark); }
+    .vote-reason { color: var(--gray); font-size: 0.9em; margin-top: 4px; }
+    .vote-meta { font-size: 0.8em; color: var(--gray); }
+    .vote-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    .btn { padding: 8px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9em; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: #d1fae5; color: #065f46; }
+    .btn-success:hover { background: #a7f3d0; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .vote-stats { display: flex; gap: 12px; margin-top: 10px; font-size: 0.85em; flex-wrap: wrap; }
+    .vote-stats span { padding: 4px 10px; border-radius: 6px; }
+    .comments-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .comment-item { background: white; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9em; }
+    .comment-author { font-weight: 600; color: var(--primary); }
+    .comment-time { font-size: 0.8em; color: var(--gray); margin-left: 8px; }
+    .comment-input { display: flex; gap: 10px; margin-top: 10px; }
+    .comment-input input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9em; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn { padding: 10px 20px; border: none; background: #e2e8f0; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .tab-btn.active { background: var(--primary); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .countdown { font-size: 0.85em; color: var(--warning); font-weight: 600; }
+    @media (max-width: 768px) { .header h1 { font-size: 1.8em; } .header p { font-size: 1em; } .token-header, .vote-header { flex-direction: column; align-items: flex-start; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Token 共享中心</h1>
+      <p>社区用户分享的 Google Token，让所有人都能使用 AI 服务</p>
+    </div>
+
+    <!-- 封禁状态提示 -->
+    <div id="banAlert" class="alert alert-danger" style="display: none;">
+      <div>
+        <strong>共享已禁用</strong><br>
+        <span id="banReason"></span><br>
+        <span id="banTime"></span>
+      </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+      <div class="stat-card"><h4>共享 Token</h4><div class="stat-value" id="totalShared">0</div></div>
+      <div class="stat-card"><h4>可用</h4><div class="stat-value" id="totalAvailable">0</div></div>
+      <div class="stat-card"><h4>今日限额</h4><div class="stat-value" id="totalLimit">0</div></div>
+      <div class="stat-card"><h4>今日已用</h4><div class="stat-value" id="totalUsed">0</div></div>
+      <div class="stat-card"><h4>活跃投票</h4><div class="stat-value" id="activeVotesCount">0</div></div>
+    </div>
+
+    <!-- 说明 -->
+    <div class="alert alert-info">
+      <div>
+        <strong>什么是 Token 共享？</strong><br>
+        社区用户自愿分享 Google Token，让没有 Token 的用户也能使用 AI 服务。发现滥用可发起投票封禁。前往 <a href="/user.html" style="color: var(--primary); font-weight: 600;">用户中心</a> 共享您的 Token。
+      </div>
+    </div>
+
+    <!-- 标签页 -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tokens')">Token 列表</button>
+      <button class="tab-btn" onclick="switchTab('usage')">用户统计</button>
+      <button class="tab-btn" onclick="switchTab('votes')">投票封禁</button>
+      <button class="tab-btn" onclick="switchTab('history')">投票历史</button>
+    </div>
+
+    <!-- Token 列表 -->
+    <div id="tokens" class="tab-content active">
+      <div class="card">
+        <h3>共享 Token 列表</h3>
+        <div id="tokenList"><div class="empty-state"><h3>正在加载...</h3></div></div>
+      </div>
+    </div>
+
+    <!-- 用户使用统计 -->
+    <div id="usage" class="tab-content">
+      <div class="card">
+        <h3>📊 用户使用统计</h3>
+        <p style="color: var(--gray); margin-bottom: 20px; font-size: 0.9em;">显示所有使用共享Token的用户及其使用情况</p>
+        <div id="userUsageList"><div class="empty-state"><h3>正在加载...</h3></div></div>
+      </div>
+    </div>
+
+    <!-- 活跃投票 -->
+    <div id="votes" class="tab-content">
+      <div class="card">
+        <h3>
+          活跃投票
+          <button class="btn btn-primary" onclick="showCreateVoteModal()" style="margin-left: auto; font-size: 0.85em;">发起投票</button>
+        </h3>
+        <div id="activeVoteList"><div class="empty-state"><h3>暂无活跃投票</h3><p>社区目前没有进行中的封禁投票</p></div></div>
+      </div>
+    </div>
+
+    <!-- 投票历史 -->
+    <div id="history" class="tab-content">
+      <div class="card">
+        <h3>投票历史</h3>
+        <div id="voteHistory"><div class="empty-state"><h3>暂无投票记录</h3></div></div>
+      </div>
+    </div>
+
+    <!-- 返回链接 -->
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="/user.html" class="nav-link">前往用户中心</a>
+      <a href="/" class="nav-link">管理员入口</a>
+    </div>
+  </div>
+
+  <!-- 发起投票弹窗 -->
+  <div id="voteModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; margin: 20px;">
+      <h3 style="margin-bottom: 20px;">发起封禁投票</h3>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: 600;">目标用户名</label>
+        <input type="text" id="voteTargetUser" placeholder="输入要举报的用户名" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 6px; font-weight: 600;">举报原因</label>
+        <textarea id="voteReason" placeholder="请详细说明举报原因..." rows="4" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; resize: vertical;"></textarea>
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="btn" style="background: #e2e8f0;" onclick="hideCreateVoteModal()">取消</button>
+        <button class="btn btn-primary" onclick="submitVote()">提交投票</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let userToken = localStorage.getItem('userToken');
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+      if (tabName === 'votes') loadActiveVotes();
+      if (tabName === 'history') loadVoteHistory();
+      if (tabName === 'usage') loadUserUsage();
+    }
+
+    async function loadBanStatus() {
+      if (!userToken) return;
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/status`, { headers: { 'X-User-Token': userToken } });
+        if (response.ok) {
+          const status = await response.json();
+          if (status.banned) {
+            document.getElementById('banAlert').style.display = 'flex';
+            document.getElementById('banReason').textContent = `原因: ${status.reason || '滥用共享资源'}`;
+            const remainingHours = Math.ceil(status.remainingTime / 3600000);
+            document.getElementById('banTime').textContent = `解禁时间: ${new Date(status.banUntil).toLocaleString()} (约 ${remainingHours} 小时后)`;
+          }
+        }
+      } catch (error) { console.error('加载封禁状态失败:', error); }
+    }
+
+    async function loadStats() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/stats`);
+        const data = await response.json();
+        document.getElementById('totalShared').textContent = data.totalShared || 0;
+        document.getElementById('totalAvailable').textContent = data.totalAvailable || 0;
+        document.getElementById('totalLimit').textContent = data.totalLimitToday || 0;
+        document.getElementById('totalUsed').textContent = data.totalUsageToday || 0;
+      } catch (error) { console.error('加载统计失败:', error); }
+    }
+
+    async function loadTokens() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/tokens`);
+        const tokens = await response.json();
+        const container = document.getElementById('tokenList');
+        if (tokens.length === 0) {
+          container.innerHTML = `<div class="empty-state"><h3>暂无共享 Token</h3><p>还没有用户共享 Token</p></div>`;
+          return;
+        }
+        container.innerHTML = tokens.map(token => {
+          const usagePercent = (token.usageToday / token.dailyLimit * 100).toFixed(1);
+          const remaining = token.remainingToday;
+          let statusClass = 'status-available', statusText = '可用';
+          if (remaining === 0) { statusClass = 'status-full'; statusText = '已满'; }
+          else if (usagePercent > 80) { statusClass = 'status-limited'; statusText = '即将满额'; }
+          return `
+            <div class="token-item">
+              <div class="token-header">
+                <div>
+                  <div class="token-owner">贡献者: ${token.username}</div>
+                  ${token.email ? `<div class="token-email">${token.email}</div>` : ''}
+                </div>
+                <span class="status-badge ${statusClass}">${statusText}</span>
+              </div>
+              <div class="progress-container">
+                <div class="progress-label"><span>今日使用</span><span><strong>${token.usageToday}</strong> / ${token.dailyLimit}</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar" style="width: ${Math.min(usagePercent, 100)}%"></div></div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (error) {
+        console.error('加载 Token 列表失败:', error);
+        document.getElementById('tokenList').innerHTML = `<div class="empty-state"><h3>加载失败</h3></div>`;
+      }
+    }
+
+    async function loadActiveVotes() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/votes`);
+        const votes = await response.json();
+        document.getElementById('activeVotesCount').textContent = votes.length;
+        const container = document.getElementById('activeVoteList');
+        if (votes.length === 0) {
+          container.innerHTML = `<div class="empty-state"><h3>暂无活跃投票</h3></div>`;
+          return;
+        }
+        container.innerHTML = votes.map(vote => renderVoteCard(vote, true)).join('');
+      } catch (error) { console.error('加载投票失败:', error); }
+    }
+
+    async function loadVoteHistory() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/votes/all`);
+        const votes = await response.json();
+        const container = document.getElementById('voteHistory');
+        const historyVotes = votes.filter(v => v.status !== 'active');
+        if (historyVotes.length === 0) {
+          container.innerHTML = `<div class="empty-state"><h3>暂无投票记录</h3></div>`;
+          return;
+        }
+        container.innerHTML = historyVotes.map(vote => renderVoteCard(vote, false)).join('');
+      } catch (error) { console.error('加载投票历史失败:', error); }
+    }
+
+    function renderVoteCard(vote, isActive) {
+      const banVotes = Object.values(vote.votes).filter(v => v === 'ban').length;
+      const unbanVotes = Object.values(vote.votes).filter(v => v === 'unban').length;
+      const totalVotes = Object.keys(vote.votes).length;
+      let statusBadge = '';
+      if (vote.status === 'passed') statusBadge = '<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:6px;font-size:0.8em;">已通过</span>';
+      else if (vote.status === 'rejected') statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:6px;font-size:0.8em;">已否决</span>';
+      else if (vote.status === 'expired') statusBadge = '<span style="background:#e2e8f0;color:#64748b;padding:4px 10px;border-radius:6px;font-size:0.8em;">已过期</span>';
+      const remainingHours = Math.max(0, Math.ceil((vote.expiresAt - Date.now()) / 3600000));
+      return `
+        <div class="vote-item">
+          <div class="vote-header">
+            <div><div class="vote-target">举报用户: ${vote.targetUserId}</div><div class="vote-reason">${vote.reason}</div></div>
+            <div>${statusBadge} ${isActive ? `<span class="countdown">剩余 ${remainingHours} 小时</span>` : ''}</div>
+          </div>
+          <div class="vote-meta">发起人: ${vote.createdBy} · ${new Date(vote.createdAt).toLocaleString()}</div>
+          <div class="vote-stats">
+            <span style="background:#fee2e2;color:#991b1b;">封禁: ${banVotes}</span>
+            <span style="background:#d1fae5;color:#065f46;">反对: ${unbanVotes}</span>
+            <span style="background:#e2e8f0;color:#64748b;">总票: ${totalVotes}</span>
+          </div>
+          ${isActive && userToken ? `<div class="vote-actions"><button class="btn btn-danger" onclick="castVote('${vote.id}', 'ban')">投票封禁</button><button class="btn btn-success" onclick="castVote('${vote.id}', 'unban')">投票反对</button></div>` : ''}
+          <div class="comments-section">
+            <strong style="font-size:0.9em;">讨论 (${vote.comments?.length || 0})</strong>
+            ${(vote.comments || []).slice(-5).map(c => `<div class="comment-item"><span class="comment-author">${c.userId}</span><span class="comment-time">${new Date(c.time).toLocaleString()}</span><div style="margin-top:4px;">${c.content}</div></div>`).join('')}
+            ${isActive && userToken ? `<div class="comment-input"><input type="text" id="comment_${vote.id}" placeholder="发表评论..."><button class="btn btn-primary" onclick="addComment('${vote.id}')">发送</button></div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    async function castVote(voteId, decision) {
+      if (!userToken) { alert('请先登录用户中心'); return; }
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/votes/${voteId}/cast`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-User-Token': userToken },
+          body: JSON.stringify({ decision })
+        });
+        const result = await response.json();
+        if (result.error) alert(result.error);
+        else { alert('投票成功！'); loadActiveVotes(); }
+      } catch (error) { alert('投票失败: ' + error.message); }
+    }
+
+    async function addComment(voteId) {
+      if (!userToken) { alert('请先登录用户中心'); return; }
+      const input = document.getElementById(`comment_${voteId}`);
+      const content = input.value.trim();
+      if (!content) return;
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/votes/${voteId}/comment`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-User-Token': userToken },
+          body: JSON.stringify({ content })
+        });
+        const result = await response.json();
+        if (result.error) alert(result.error);
+        else { input.value = ''; loadActiveVotes(); }
+      } catch (error) { alert('评论失败: ' + error.message); }
+    }
+
+    function showCreateVoteModal() {
+      if (!userToken) { alert('请先登录用户中心才能发起投票'); return; }
+      document.getElementById('voteModal').style.display = 'flex';
+    }
+    function hideCreateVoteModal() { document.getElementById('voteModal').style.display = 'none'; }
+
+    async function submitVote() {
+      const targetUserId = document.getElementById('voteTargetUser').value.trim();
+      const reason = document.getElementById('voteReason').value.trim();
+      if (!targetUserId || !reason) { alert('请填写完整信息'); return; }
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/votes`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-User-Token': userToken },
+          body: JSON.stringify({ targetUserId, reason })
+        });
+        const result = await response.json();
+        if (result.error) alert(result.error);
+        else {
+          alert('投票已创建！将在24小时后统计结果。');
+          hideCreateVoteModal();
+          document.getElementById('voteTargetUser').value = '';
+          document.getElementById('voteReason').value = '';
+          loadActiveVotes();
+        }
+      } catch (error) { alert('创建投票失败: ' + error.message); }
+    }
+
+    // 加载用户使用统计
+    async function loadUserUsage() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/shared/user-usage`);
+        if (!response.ok) {
+          throw new Error('获取用户统计失败');
+        }
+        const users = await response.json();
+        const container = document.getElementById('userUsageList');
+
+        if (!users || users.length === 0) {
+          container.innerHTML = `<div class="empty-state"><h3>暂无使用记录</h3><p>还没有用户使用共享Token</p></div>`;
+          return;
+        }
+
+        // 按平均使用量排序
+        users.sort((a, b) => b.avgUsage - a.avgUsage);
+
+        container.innerHTML = users.map((user, index) => {
+          const avgUsage = user.avgUsage || 0;
+          const todayUsage = user.todayUsage || 0;
+          const totalDays = user.totalDays || 0;
+          const totalUsage = user.totalUsage || 0;
+          const maxUsage = user.maxUsage || 0;
+
+          // 计算使用等级
+          let levelClass = 'status-available';
+          let levelText = '正常';
+          if (avgUsage > 50) {
+            levelClass = 'status-full';
+            levelText = '异常';
+          } else if (avgUsage > 30) {
+            levelClass = 'status-limited';
+            levelText = '偏高';
+          }
+
+          // 是否被封禁
+          const isBanned = user.banned || false;
+          const banInfo = isBanned ? `<span style="color: #ef4444; font-weight: 600; margin-left: 8px;">🚫 已封禁</span>` : '';
+
+          return `
+            <div class="token-item" style="${isBanned ? 'opacity: 0.7; border-color: #ef4444;' : ''}">
+              <div class="token-header">
+                <div>
+                  <div class="token-owner" style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--gray); font-size: 0.9em;">#${index + 1}</span>
+                    ${user.username || '未知用户'}
+                    ${banInfo}
+                  </div>
+                  ${user.email ? `<div class="token-email">${user.email}</div>` : ''}
+                </div>
+                <span class="status-badge ${levelClass}">${levelText}</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 14px; padding: 12px; background: white; border-radius: 8px;">
+                <div style="text-align: center;">
+                  <div style="color: var(--gray); font-size: 0.8em;">平均日使用</div>
+                  <div style="font-size: 1.3em; font-weight: 700; color: ${avgUsage > 50 ? '#ef4444' : avgUsage > 30 ? '#f59e0b' : '#10b981'};">${avgUsage}</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="color: var(--gray); font-size: 0.8em;">今日使用</div>
+                  <div style="font-size: 1.3em; font-weight: 700; color: var(--primary);">${todayUsage}</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="color: var(--gray); font-size: 0.8em;">最大日使用</div>
+                  <div style="font-size: 1.3em; font-weight: 700; color: var(--secondary);">${maxUsage}</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="color: var(--gray); font-size: 0.8em;">使用天数</div>
+                  <div style="font-size: 1.3em; font-weight: 700; color: var(--info);">${totalDays}</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="color: var(--gray); font-size: 0.8em;">总使用次数</div>
+                  <div style="font-size: 1.3em; font-weight: 700; color: var(--gray);">${totalUsage}</div>
+                </div>
+              </div>
+
+              ${isBanned && user.banReason ? `
+                <div style="margin-top: 10px; padding: 8px 12px; background: #fee2e2; border-radius: 6px; color: #991b1b; font-size: 0.85em;">
+                  <strong>封禁原因:</strong> ${user.banReason}
+                  ${user.banUntil ? `<br><strong>解封时间:</strong> ${new Date(user.banUntil).toLocaleString()}` : ''}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('加载用户统计失败:', error);
+        document.getElementById('userUsageList').innerHTML = `
+          <div class="empty-state">
+            <h3>加载失败</h3>
+            <p style="color: #ef4444;">${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    async function init() {
+      await loadBanStatus();
+      await loadStats();
+      await loadTokens();
+      await loadActiveVotes();
+      setInterval(async () => { await loadStats(); await loadTokens(); }, 30000);
+    }
+    init();
+  </script>
+</body>
+</html>

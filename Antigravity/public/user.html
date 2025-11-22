@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity API - 用户中心</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #8b5cf6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --dark: #1e293b;
+      --light: #f8fafc;
+      --gray: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 50%, #fef3f2 100%);
+      min-height: 100vh;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* 登录/注册页面 */
+    .auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .auth-overlay.hidden {
+      display: none;
+    }
+
+    .auth-box {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 48px 40px;
+      border-radius: 24px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.35);
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    .auth-box h2 {
+      color: var(--dark);
+      margin-bottom: 8px;
+      font-size: 2em;
+      font-weight: 700;
+    }
+
+    .auth-box p {
+      color: var(--gray);
+      margin-bottom: 32px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--gray);
+      transition: all 0.2s;
+    }
+
+    .auth-tab.active {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-color: transparent;
+      color: white;
+    }
+
+    .auth-form {
+      display: none;
+      text-align: left;
+    }
+
+    .auth-form.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 0.95em;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.95em;
+      transition: all 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .auth-error {
+      color: var(--danger);
+      margin-top: 16px;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
+
+    .auth-link {
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: var(--gray);
+    }
+
+    .auth-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* 用户面板 */
+    .header {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+      padding: 32px 40px;
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      color: white;
+      font-size: 1.8em;
+      font-weight: 700;
+    }
+
+    .header-info {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.95em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-logout {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* 导航栏 */
+    .nav-bar {
+      background: white;
+      padding: 12px 20px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .nav-btn {
+      padding: 10px 20px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--gray);
+      transition: all 0.2s;
+      width: auto;
+    }
+
+    .nav-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .nav-btn.active {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-color: transparent;
+      color: white;
+    }
+
+    .nav-btn.active:hover {
+      color: white;
+    }
+
+    /* 页面内容区域 */
+    .page-content {
+      display: none;
+    }
+
+    .page-content.active {
+      display: block;
+    }
+
+    .card {
+      background: white;
+      padding: 28px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      color: var(--dark);
+      margin-bottom: 20px;
+      font-size: 1.25em;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .key-item {
+      background: #f8f9fa;
+      padding: 20px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .key-item:hover {
+      border-color: var(--primary);
+    }
+
+    .key-value {
+      font-family: 'Courier New', monospace;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      margin: 10px 0;
+      word-break: break-all;
+      font-size: 0.9em;
+    }
+
+    .key-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .key-meta small {
+      color: var(--gray);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      padding: 8px 16px;
+      font-size: 0.9em;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .copy-btn {
+      background: var(--primary);
+      padding: 6px 12px;
+      font-size: 0.8em;
+      border-radius: 6px;
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+    }
+
+    .alert {
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .stat-card h4 {
+      color: var(--gray);
+      font-size: 0.85em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      font-size: 2em;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--gray);
+    }
+
+    .empty-state p {
+      margin-bottom: 20px;
+    }
+
+    .flex-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85em;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    .admin-link {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.85em;
+    }
+
+    .admin-link a {
+      color: var(--gray);
+      text-decoration: none;
+    }
+
+    .admin-link a:hover {
+      color: var(--primary);
+    }
+
+    /* 注册条款弹窗 */
+    .terms-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      padding: 20px;
+    }
+
+    .terms-modal.hidden {
+      display: none;
+    }
+
+    .terms-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 700px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .terms-content h2 {
+      color: var(--dark);
+      margin-bottom: 20px;
+      font-size: 1.8em;
+      text-align: center;
+    }
+
+    .terms-content h3 {
+      color: var(--primary);
+      margin-top: 24px;
+      margin-bottom: 12px;
+      font-size: 1.2em;
+    }
+
+    .terms-content p, .terms-content ul {
+      color: var(--dark);
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    .terms-content ul {
+      padding-left: 24px;
+    }
+
+    .terms-content li {
+      margin-bottom: 8px;
+    }
+
+    .terms-highlight {
+      background: linear-gradient(135deg, #fef3c7 0%, #fef9e6 100%);
+      padding: 16px 20px;
+      border-radius: 10px;
+      border-left: 4px solid var(--warning);
+      margin: 20px 0;
+      font-weight: 600;
+      color: #92400e;
+    }
+
+    .terms-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      justify-content: center;
+    }
+
+    .btn-accept {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-accept:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-decline {
+      background: #f1f5f9;
+      color: var(--dark);
+      padding: 12px 32px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-decline:hover {
+      background: #e2e8f0;
+    }
+
+    .terms-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .terms-checkbox input {
+      width: auto;
+      cursor: pointer;
+    }
+
+    .terms-checkbox label {
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.95em;
+    }
+
+    .terms-link {
+      color: var(--primary);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .terms-link:hover {
+      color: var(--primary-dark);
+    }
+
+    /* 公告样式 */
+    .announcement-container {
+      margin-bottom: 24px;
+    }
+
+    .announcement {
+      background: white;
+      padding: 20px 24px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      border-left: 4px solid var(--primary);
+      transition: all 0.2s;
+    }
+
+    .announcement:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .announcement.pinned {
+      border-left-color: var(--warning);
+      background: linear-gradient(135deg, #fef3c7 0%, #fef9e6 100%);
+    }
+
+    .announcement.type-success {
+      border-left-color: var(--success);
+      background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+    }
+
+    .announcement.type-danger {
+      border-left-color: var(--danger);
+      background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+    }
+
+    .announcement.type-info {
+      border-left-color: var(--info);
+      background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    }
+
+    .announcement-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .announcement-title {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: var(--dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .announcement-badge {
+      font-size: 0.75em;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--warning);
+      color: white;
+      font-weight: 600;
+    }
+
+    .announcement-time {
+      font-size: 0.85em;
+      color: var(--gray);
+    }
+
+    .announcement-content {
+      color: var(--dark);
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+
+    .announcement-images {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .announcement-image {
+      width: 100%;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .announcement-image:hover {
+      transform: scale(1.05);
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+      }
+
+      .auth-box {
+        margin: 16px;
+        padding: 32px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 注册条款弹窗 -->
+  <div id="termsModal" class="terms-modal hidden">
+    <div class="terms-content">
+      <h2>📋 用户注册协议与使用须知</h2>
+
+      <div class="terms-highlight">
+        ⚠️ 重要声明：本服务仅供学习、研究和技术交流使用，请勿用于任何商业或非法用途！
+      </div>
+
+      <h3>一、服务性质</h3>
+      <p>Antigravity API 是一个学习型 API 代理服务平台，旨在为开发者提供学习和测试环境。使用本服务即表示您同意以下条款：</p>
+      <ul>
+        <li>本服务<strong>仅供学习、研究和技术交流</strong>使用</li>
+        <li>禁止将本服务用于任何商业用途或盈利行为</li>
+        <li>禁止利用本服务从事任何违法违规活动</li>
+        <li>本服务不对数据安全性、可用性做任何保证</li>
+      </ul>
+
+      <h3>二、账号安全</h3>
+      <ul>
+        <li>您需要妥善保管账号密码，不要与他人分享</li>
+        <li>建议使用复杂密码，长度至少 8 位，包含字母、数字和符号</li>
+        <li>定期更换密码，发现异常立即修改密码</li>
+        <li>API 密钥一旦生成，请立即保存，系统不会再次完整显示</li>
+        <li>不要在公开场合或代码仓库中泄露您的 API 密钥</li>
+      </ul>
+
+      <h3>三、使用规范</h3>
+      <ul>
+        <li>合理使用 API 接口，避免高频请求影响系统稳定性</li>
+        <li>遵守频率限制，超出限制将被暂时封禁</li>
+        <li>每个用户最多可创建 5 个 API 密钥</li>
+        <li>不得利用本服务进行攻击、爬虫、刷量等恶意行为</li>
+        <li>不得绕过系统安全机制或尝试入侵系统</li>
+      </ul>
+
+      <h3>四、Token 共享规则</h3>
+      <ul>
+        <li>用户可自愿分享自己的 Google Token 供他人使用</li>
+        <li>共享 Token 需设置合理的每日使用限额</li>
+        <li>您对自己共享的 Token 产生的所有行为负责</li>
+        <li>如发现滥用，管理员有权禁用您的共享功能</li>
+        <li>请勿共享来源不明或非法获取的 Token</li>
+      </ul>
+
+      <h3>五、隐私保护</h3>
+      <ul>
+        <li>我们重视您的隐私，仅收集必要的账号信息</li>
+        <li>您的邮箱、密码等信息将被加密存储</li>
+        <li>我们不会向第三方出售或泄露您的个人信息</li>
+        <li>系统会记录必要的操作日志用于安全审计</li>
+      </ul>
+
+      <h3>六、免责声明</h3>
+      <ul>
+        <li>本服务按"现状"提供，不提供任何明示或暗示的保证</li>
+        <li>服务可能随时中断、停止或修改，恕不另行通知</li>
+        <li>因使用本服务产生的任何损失，我们不承担责任</li>
+        <li>用户应自行承担使用本服务的所有风险</li>
+        <li>对于用户上传或生成的内容，我们不承担审查义务</li>
+      </ul>
+
+      <h3>七、违规处理</h3>
+      <p>如果发现您有以下行为，我们将采取相应措施：</p>
+      <ul>
+        <li><strong>轻度违规</strong>：发出警告、限制功能使用</li>
+        <li><strong>中度违规</strong>：暂时封禁账号、删除违规内容</li>
+        <li><strong>严重违规</strong>：永久封禁账号及关联 IP/设备</li>
+        <li><strong>违法行为</strong>：保留追究法律责任的权利</li>
+      </ul>
+
+      <h3>八、其他条款</h3>
+      <ul>
+        <li>本协议的解释权归平台所有</li>
+        <li>我们保留随时修改本协议的权利</li>
+        <li>继续使用服务即视为接受修改后的协议</li>
+        <li>如有疑问，请通过管理员入口联系我们</li>
+      </ul>
+
+      <div class="terms-highlight" style="margin-top: 30px;">
+        📖 请仔细阅读以上条款。点击"同意并继续"即表示您已阅读、理解并同意遵守本协议的全部内容。
+      </div>
+
+      <div class="terms-actions">
+        <button class="btn-decline" onclick="closeTermsModal()">取消注册</button>
+        <button class="btn-accept" onclick="acceptTerms()">同意并继续</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 登录/注册页面 -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-box">
+      <h2>用户中心</h2>
+      <p>登录或注册以管理您的 API 密钥</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login', event)">登录</button>
+        <button class="auth-tab" onclick="switchAuthTab('register', event)">注册</button>
+      </div>
+
+      <!-- 登录表单 -->
+      <div id="loginForm" class="auth-form active">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="loginUsername" placeholder="请输入用户名" onkeypress="if(event.key==='Enter')doUserLogin()">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码" onkeypress="if(event.key==='Enter')doUserLogin()">
+        </div>
+        <button onclick="doUserLogin()" id="loginBtn">登录</button>
+      </div>
+
+      <!-- 注册表单 -->
+      <div id="registerForm" class="auth-form">
+        <div class="form-group">
+          <label>用户名 <span style="color: var(--danger);">*</span></label>
+          <input type="text" id="regUsername" placeholder="3-20个字符，字母数字下划线">
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="regEmail" placeholder="可选">
+        </div>
+        <div class="form-group">
+          <label>密码 <span style="color: var(--danger);">*</span></label>
+          <input type="password" id="regPassword" placeholder="至少6个字符">
+        </div>
+        <div class="form-group">
+          <label>确认密码 <span style="color: var(--danger);">*</span></label>
+          <input type="password" id="regConfirmPassword" placeholder="再次输入密码">
+        </div>
+        <div class="form-group">
+          <label>验证码 <span style="color: var(--danger);">*</span></label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <div id="captchaDisplay" style="background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%); padding: 12px 20px; border-radius: 8px; font-weight: 700; font-size: 1.1em; color: var(--primary); letter-spacing: 2px; user-select: none; min-width: 120px; text-align: center;"></div>
+            <button type="button" onclick="refreshCaptcha()" style="padding: 10px 16px; font-size: 0.85em; width: auto;">刷新</button>
+          </div>
+          <input type="text" id="regCaptcha" placeholder="请输入验证码结果" style="margin-top: 10px;" onkeypress="if(event.key==='Enter')doUserRegister()">
+        </div>
+        <div class="terms-checkbox">
+          <input type="checkbox" id="agreeTerms">
+          <label for="agreeTerms">我已阅读并同意 <span class="terms-link" onclick="showTermsModal()">《用户注册协议与使用须知》</span></label>
+        </div>
+        <button onclick="doUserRegister()" id="registerBtn">注册</button>
+      </div>
+
+      <div id="authError" class="auth-error"></div>
+
+      <div class="admin-link">
+        <a href="/">管理员入口</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 用户面板 -->
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>用户中心</h1>
+        <div class="header-info">欢迎回来，<span id="displayUsername">用户</span></div>
+      </div>
+      <div class="header-actions">
+        <button onclick="doUserLogout()" class="btn-logout">退出登录</button>
+      </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <div class="nav-bar">
+      <button class="nav-btn active" onclick="switchPage('home')">首页</button>
+      <button class="nav-btn" onclick="switchPage('keys')">密钥管理</button>
+      <button class="nav-btn" onclick="switchPage('tokens')">Token 管理</button>
+      <button class="nav-btn" onclick="window.open('/share.html', '_blank')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-color: transparent;">🌐 共享中心</button>
+      <button class="nav-btn" onclick="switchPage('docs')">API 文档</button>
+      <button class="nav-btn" onclick="switchPage('test')">测试</button>
+      <button class="nav-btn" onclick="switchPage('settings')">设置</button>
+    </div>
+
+    <!-- 首页 -->
+    <div id="page-home" class="page-content active">
+      <!-- 统计卡片 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h4>API 密钥数</h4>
+          <div class="stat-value" id="keyCount">0</div>
+        </div>
+        <div class="stat-card">
+          <h4>总请求数</h4>
+          <div class="stat-value" id="totalRequests">0</div>
+        </div>
+      </div>
+
+      <!-- 系统公告 -->
+      <div id="announcementContainer" class="announcement-container"></div>
+
+      <!-- 生成密钥 -->
+      <div class="card">
+        <h3>生成 API 密钥</h3>
+        <p style="color: var(--gray); margin-bottom: 16px;">
+          API 密钥用于您的应用调用本服务的接口。与"Token 管理"中的 Google Token 不同，后者是给本服务调用 Google API 使用的。
+        </p>
+        <div class="form-group">
+          <label>密钥名称（可选）</label>
+          <input type="text" id="keyName" placeholder="例如：我的应用">
+        </div>
+        <button onclick="generateKey()" class="btn-success" style="width: auto;">生成密钥</button>
+        <div id="generateResult" style="margin-top: 15px;"></div>
+      </div>
+
+      <!-- 我的密钥 -->
+      <div class="card">
+        <h3>我的 API 密钥</h3>
+        <div id="keyList">
+          <div class="empty-state">
+            <p>暂无密钥</p>
+            <p>点击上方"生成密钥"创建您的第一个 API 密钥</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 密钥管理页面 -->
+    <div id="page-keys" class="page-content">
+      <div class="alert alert-info">
+        <strong>说明：</strong>API 密钥（sk-user- 开头）是您用来调用本服务 API 的凭证。这与"Token 管理"中的 Google Token（用于本服务后端调用 Google API）是完全不同的两个概念。
+      </div>
+
+      <div class="card">
+        <h3>生成新密钥</h3>
+        <div class="form-group">
+          <label>密钥名称（可选）</label>
+          <input type="text" id="keyName2" placeholder="例如：我的应用">
+        </div>
+        <button onclick="generateKey2()" class="btn-success" style="width: auto;">生成密钥</button>
+        <div id="generateResult2" style="margin-top: 15px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>所有密钥</h3>
+        <div id="keyList2">
+          <div class="empty-state">
+            <p>暂无密钥</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token 管理页面 -->
+    <div id="page-tokens" class="page-content">
+      <!-- Token 统计卡片 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h4>我的 Token 数</h4>
+          <div class="stat-value" id="tokenCount">0</div>
+        </div>
+        <div class="stat-card">
+          <h4>已共享 Token</h4>
+          <div class="stat-value" id="sharedTokenCount">0</div>
+        </div>
+        <div class="stat-card">
+          <h4>今日共享使用</h4>
+          <div class="stat-value" id="sharedUsageToday">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>添加 Google Token</h3>
+        <p style="color: var(--gray); margin-bottom: 20px;">
+          Google Token 用于本服务调用 Google API，与上方的 API 密钥（用户调用本服务）是两回事
+        </p>
+
+        <button onclick="addGoogleToken()" class="btn-success" style="width: auto; display: flex; align-items: center; gap: 10px; margin: 0;">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          使用 Google 账号授权
+        </button>
+
+        <div class="alert alert-info" style="margin-top: 20px;">
+          <strong>说明：</strong>添加的 Token 默认仅供您自己使用。您可以在下方的 Token 列表中启用共享功能，让其他用户也能使用您的 Token（每日使用次数可自定义）。查看 <a href="/share.html" target="_blank" style="color: var(--primary); font-weight: 600;">共享中心</a> 了解更多。
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>手动添加 Token（回调链接）</h3>
+        <p style="color: var(--gray); margin-bottom: 16px;">
+          如果自动回调失败，可以将浏览器跳转后的完整回调链接粘贴到此处添加 Token
+        </p>
+
+        <div class="form-group">
+          <label>回调链接</label>
+          <input type="text" id="callbackUrl" placeholder="http://localhost:xxxx/oauth-callback?code=...">
+        </div>
+
+        <button onclick="addTokenFromCallback()" class="btn-secondary" style="width: auto;">添加 Token</button>
+        <div id="callbackResult" style="margin-top: 15px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>我的 Token</h3>
+        <div id="tokenList">
+          <div class="empty-state">
+            <p>暂无 Token</p>
+            <p>点击上方按钮添加您的第一个 Google Token</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>直接添加 Token</h3>
+        <p style="color: var(--gray); margin-bottom: 16px;">
+          如果您已有 Access Token 和 Refresh Token，可以直接在此处添加
+        </p>
+
+        <div class="form-group">
+          <label>Access Token <span style="color: var(--danger);">*</span></label>
+          <input type="text" id="manualAccessToken" placeholder="请输入 Access Token">
+        </div>
+
+        <div class="form-group">
+          <label>Refresh Token</label>
+          <input type="text" id="manualRefreshToken" placeholder="可选">
+        </div>
+
+        <div class="form-group">
+          <label>过期时间（秒）</label>
+          <input type="number" id="manualExpiresIn" placeholder="默认 3600" value="3600">
+        </div>
+
+        <button onclick="addManualToken()" class="btn-secondary" style="width: auto;">添加 Token</button>
+        <div id="manualTokenResult" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+
+    <!-- API 文档页面 -->
+    <div id="page-docs" class="page-content">
+      <div class="card">
+        <h3>API 使用说明</h3>
+        <p style="color: var(--gray); margin-bottom: 16px;">
+          使用您在"密钥管理"中生成的 API 密钥（sk-user- 开头）来调用本服务的接口：
+        </p>
+
+        <div class="code-block">curl <span id="apiBaseUrl">http://localhost:8045</span>/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "gemini-2.0-flash-exp",
+    "messages": [{"role": "user", "content": "你好"}],
+    "stream": true
+  }'</div>
+
+        <div class="alert alert-info" style="margin-top: 16px;">
+          <strong>注意：</strong>每个用户最多可创建 5 个 API 密钥
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>可用模型</h3>
+        <div id="modelList">
+          <p style="color: var(--gray);">正在加载模型列表...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>请求示例</h3>
+        <h4 style="margin-bottom: 10px; color: var(--dark);">Python</h4>
+        <div class="code-block">import requests
+
+response = requests.post(
+    "<span class="apiBaseUrl2">http://localhost:8045</span>/v1/chat/completions",
+    headers={
+        "Content-Type": "application/json",
+        "Authorization": "Bearer YOUR_API_KEY"
+    },
+    json={
+        "model": "gemini-2.0-flash-exp",
+        "messages": [{"role": "user", "content": "你好"}],
+        "stream": False
+    }
+)
+print(response.json())</div>
+
+        <h4 style="margin: 20px 0 10px; color: var(--dark);">JavaScript</h4>
+        <div class="code-block">const response = await fetch('<span class="apiBaseUrl2">http://localhost:8045</span>/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_API_KEY'
+  },
+  body: JSON.stringify({
+    model: 'gemini-2.0-flash-exp',
+    messages: [{ role: 'user', content: '你好' }],
+    stream: false
+  })
+});
+const data = await response.json();
+console.log(data);</div>
+      </div>
+    </div>
+
+    <!-- 测试页面 -->
+    <div id="page-test" class="page-content">
+      <div class="card">
+        <h3>API 测试</h3>
+        <p style="color: var(--gray); margin-bottom: 16px;">
+          选择模型并发送测试消息，验证 API 是否正常工作。
+        </p>
+
+        <div class="form-group">
+          <label>选择模型</label>
+          <div style="display: flex; gap: 10px;">
+            <select id="testModel" style="flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95em;">
+              <option value="">加载中...</option>
+            </select>
+            <button onclick="loadModels()" class="btn-secondary" style="width: auto; padding: 12px 20px;">刷新</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>测试消息</label>
+          <textarea id="testMessage" rows="3" placeholder="输入测试消息，例如：你好，请简单介绍一下自己" style="width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95em; font-family: inherit; resize: vertical;">你好</textarea>
+        </div>
+
+        <div class="form-group">
+          <label>流式输出</label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="testStream" checked style="width: 18px; height: 18px;">
+            <span style="color: var(--gray);">启用流式响应 (SSE)</span>
+          </label>
+        </div>
+
+        <button onclick="sendTestMessage()" class="btn-success" style="width: auto;">发送测试</button>
+        <div id="testResult" style="margin-top: 20px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>响应结果</h3>
+        <div id="testResponse" style="background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 12px; font-family: 'Monaco', 'Menlo', monospace; font-size: 13px; line-height: 1.6; min-height: 200px; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;">
+          <span style="color: #94a3b8;">等待发送测试消息...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置页面 -->
+    <div id="page-settings" class="page-content">
+      <div class="card">
+        <h3>账户信息</h3>
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="settingsUsername" disabled style="background: #f1f5f9;">
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="settingsEmail" placeholder="请输入邮箱">
+        </div>
+        <button onclick="updateProfile()" class="btn-secondary" style="width: auto;">更新信息</button>
+        <div id="profileResult" style="margin-top: 15px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>修改密码</h3>
+        <div class="form-group">
+          <label>新密码</label>
+          <input type="password" id="newPassword" placeholder="请输入新密码">
+        </div>
+        <div class="form-group">
+          <label>确认新密码</label>
+          <input type="password" id="confirmNewPassword" placeholder="请再次输入新密码">
+        </div>
+        <button onclick="changePassword()" class="btn-warning" style="width: auto; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">修改密码</button>
+        <div id="passwordResult" style="margin-top: 15px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>系统提示词</h3>
+        <p style="color: var(--gray); margin-bottom: 16px;">
+          设置您的默认系统提示词，使用您的 API 密钥调用时会自动添加到每个请求中。留空则不添加。
+        </p>
+        <div class="form-group">
+          <label>系统提示词</label>
+          <textarea id="systemPrompt" rows="6" placeholder="例如：你是一个专业的编程助手，请用简洁清晰的方式回答问题..." style="width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 0.95em; font-family: inherit; resize: vertical;"></textarea>
+        </div>
+        <button onclick="updateSystemPrompt()" class="btn-secondary" style="width: auto;">保存提示词</button>
+        <div id="systemPromptResult" style="margin-top: 15px;"></div>
+      </div>
+
+      <div class="card">
+        <h3>账户统计</h3>
+        <div class="stats-grid" style="margin-bottom: 0;">
+          <div class="stat-card">
+            <h4>注册时间</h4>
+            <div id="registerTime" style="font-size: 0.9em; color: var(--gray);">-</div>
+          </div>
+          <div class="stat-card">
+            <h4>密钥数量</h4>
+            <div class="stat-value" id="settingsKeyCount">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let userToken = localStorage.getItem('userToken') || '';
+    let captchaAnswer = 0;
+
+    // 生成验证码
+    function generateCaptcha() {
+      const operators = ['+', '-', '*'];
+      const operator = operators[Math.floor(Math.random() * operators.length)];
+      let num1, num2, answer;
+
+      switch (operator) {
+        case '+':
+          num1 = Math.floor(Math.random() * 20) + 1;
+          num2 = Math.floor(Math.random() * 20) + 1;
+          answer = num1 + num2;
+          break;
+        case '-':
+          num1 = Math.floor(Math.random() * 20) + 10;
+          num2 = Math.floor(Math.random() * 10) + 1;
+          answer = num1 - num2;
+          break;
+        case '*':
+          num1 = Math.floor(Math.random() * 9) + 1;
+          num2 = Math.floor(Math.random() * 9) + 1;
+          answer = num1 * num2;
+          break;
+      }
+
+      captchaAnswer = answer;
+      return `${num1} ${operator} ${num2} = ?`;
+    }
+
+    // 刷新验证码
+    function refreshCaptcha() {
+      const display = document.getElementById('captchaDisplay');
+      if (display) {
+        display.textContent = generateCaptcha();
+        document.getElementById('regCaptcha').value = '';
+      }
+    }
+
+    // 显示注册条款弹窗
+    function showTermsModal() {
+      document.getElementById('termsModal').classList.remove('hidden');
+    }
+
+    // 关闭注册条款弹窗
+    function closeTermsModal() {
+      document.getElementById('termsModal').classList.add('hidden');
+      // 切换回登录标签
+      switchAuthTab('login');
+    }
+
+    // 接受条款
+    function acceptTerms() {
+      document.getElementById('agreeTerms').checked = true;
+      document.getElementById('termsModal').classList.add('hidden');
+    }
+
+    // 获取用户认证头
+    function getUserHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'X-User-Token': userToken
+      };
+    }
+
+
+    // 切换登录/注册标签
+    function switchAuthTab(tab, event) {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+
+      // 如果有事件对象，激活点击的标签；否则通过 tab 参数查找对应标签
+      if (event && event.target) {
+        event.target.classList.add('active');
+      } else {
+        // 通过 onclick 属性查找对应的标签按钮
+        const tabs = document.querySelectorAll('.auth-tab');
+        tabs.forEach(t => {
+          if (t.getAttribute('onclick').includes(`'${tab}'`)) {
+            t.classList.add('active');
+          }
+        });
+      }
+
+      document.getElementById(tab + 'Form').classList.add('active');
+      document.getElementById('authError').textContent = '';
+
+      // 切换到注册时生成验证码
+      if (tab === 'register') {
+        refreshCaptcha();
+      }
+    }
+
+    // 用户登录
+    async function doUserLogin() {
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+      const errorEl = document.getElementById('authError');
+      const btn = document.getElementById('loginBtn');
+
+      if (!username || !password) {
+        errorEl.textContent = '请输入用户名和密码';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '登录中...';
+      errorEl.textContent = '';
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          userToken = data.token;
+          localStorage.setItem('userToken', userToken);
+          localStorage.setItem('username', data.user.username);
+          document.getElementById('authOverlay').classList.add('hidden');
+          loadUserData();
+        } else {
+          errorEl.textContent = data.error || '登录失败';
+        }
+      } catch (error) {
+        errorEl.textContent = '登录失败: ' + error.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登录';
+      }
+    }
+
+    // 获取设备信息
+    function getDeviceInfo() {
+      return {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        screen: `${screen.width}x${screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        platform: navigator.platform
+      };
+    }
+
+    // 用户注册
+    async function doUserRegister() {
+      const username = document.getElementById('regUsername').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regConfirmPassword').value;
+      const errorEl = document.getElementById('authError');
+      const btn = document.getElementById('registerBtn');
+
+      if (!username || !password) {
+        errorEl.textContent = '用户名和密码是必填项';
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        errorEl.textContent = '两次输入的密码不一致';
+        return;
+      }
+
+      // 验证码校验
+      const captchaInput = document.getElementById('regCaptcha').value.trim();
+      if (!captchaInput) {
+        errorEl.textContent = '请输入验证码';
+        return;
+      }
+
+      if (parseInt(captchaInput) !== captchaAnswer) {
+        errorEl.textContent = '验证码错误';
+        refreshCaptcha();
+        return;
+      }
+
+      // 检查是否同意条款
+      const agreeTerms = document.getElementById('agreeTerms').checked;
+      if (!agreeTerms) {
+        errorEl.textContent = '请阅读并同意用户注册协议';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '注册中...';
+      errorEl.textContent = '';
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            password,
+            email,
+            deviceInfo: getDeviceInfo()
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // 注册成功，自动登录
+          errorEl.style.color = 'var(--success)';
+          errorEl.textContent = '注册成功！正在登录...';
+
+          document.getElementById('loginUsername').value = username;
+          document.getElementById('loginPassword').value = password;
+
+          // 清空注册表单
+          document.getElementById('regCaptcha').value = '';
+          refreshCaptcha();
+
+          switchAuthTab('login');
+          setTimeout(() => doUserLogin(), 500);
+        } else {
+          errorEl.textContent = data.error || '注册失败';
+          refreshCaptcha();
+        }
+      } catch (error) {
+        errorEl.textContent = '注册失败: ' + error.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '注册';
+      }
+    }
+
+    // 用户登出
+    async function doUserLogout() {
+      try {
+        await fetch(`${API_BASE}/admin/user/logout`, {
+          method: 'POST',
+          headers: getUserHeaders()
+        });
+      } catch (e) {}
+
+      userToken = '';
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('username');
+      document.getElementById('authOverlay').classList.remove('hidden');
+    }
+
+    // 验证会话
+    async function verifyUserSession() {
+      if (!userToken) return false;
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/verify`, {
+          headers: { 'X-User-Token': userToken }
+        });
+        return response.ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // 加载公告
+    async function loadAnnouncements() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/announcements/active`);
+        const announcements = await response.json();
+        const container = document.getElementById('announcementContainer');
+
+        if (!announcements || announcements.length === 0) {
+          container.innerHTML = '';
+          return;
+        }
+
+        container.innerHTML = announcements.map(ann => {
+          const typeClass = ann.type !== 'info' ? `type-${ann.type}` : '';
+          const pinnedClass = ann.pinned ? 'pinned' : '';
+          const date = new Date(ann.created).toLocaleString();
+
+          return `
+            <div class="announcement ${typeClass} ${pinnedClass}">
+              <div class="announcement-header">
+                <div class="announcement-title">
+                  ${ann.pinned ? '<span class="announcement-badge">置顶</span>' : ''}
+                  ${ann.title}
+                </div>
+                <div class="announcement-time">${date}</div>
+              </div>
+              <div class="announcement-content">${ann.content.replace(/\n/g, '<br>')}</div>
+              ${ann.images && ann.images.length > 0 ? `
+                <div class="announcement-images">
+                  ${ann.images.map(img => `
+                    <img src="${img}" class="announcement-image" onclick="window.open('${img}', '_blank')" alt="公告图片">
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('加载公告失败:', error);
+      }
+    }
+
+    // 加载用户数据
+    async function loadUserData() {
+      document.getElementById('displayUsername').textContent = localStorage.getItem('username') || '用户';
+      document.getElementById('apiBaseUrl').textContent = API_BASE;
+
+      await loadAnnouncements();
+      await loadKeys();
+    }
+
+    // 加载密钥列表
+    async function loadKeys() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/keys`, {
+          headers: getUserHeaders()
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const keys = await response.json();
+        const container = document.getElementById('keyList');
+
+        // 更新统计
+        document.getElementById('keyCount').textContent = keys.length;
+        let totalReqs = keys.reduce((sum, k) => sum + (k.requests || 0), 0);
+        document.getElementById('totalRequests').textContent = totalReqs;
+
+        if (keys.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <p>暂无密钥</p>
+              <p>点击上方"生成密钥"创建您的第一个 API 密钥</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = keys.map(key => `
+          <div class="key-item">
+            <div style="font-weight: 600; color: var(--dark);">${key.name}</div>
+            <div class="key-value">${key.key}</div>
+            <div class="key-meta">
+              <div>
+                <small>创建时间: ${new Date(key.created).toLocaleString()}</small>
+                ${key.lastUsed ? `<small style="margin-left: 15px;">上次使用: ${new Date(key.lastUsed).toLocaleString()}</small>` : ''}
+                <small style="margin-left: 15px;">请求次数: ${key.requests || 0}</small>
+              </div>
+              <div class="flex-buttons">
+                <button class="copy-btn" onclick="copyToClipboard('${key.key}', this)">复制</button>
+                <button class="btn-danger" onclick="deleteKey('${key.id}')">删除</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('加载密钥失败:', error);
+      }
+    }
+
+    // 生成密钥
+    async function generateKey() {
+      const name = document.getElementById('keyName').value || '未命名';
+      const resultEl = document.getElementById('generateResult');
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/keys/generate`, {
+          method: 'POST',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ name })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultEl.innerHTML = `
+            <div class="alert alert-success">
+              密钥生成成功！<br>
+              <strong style="word-break: break-all;">${data.key.key}</strong><br>
+              <small>请妥善保存，此密钥不会再次完整显示！</small>
+            </div>
+          `;
+          document.getElementById('keyName').value = '';
+          loadKeys();
+        } else {
+          resultEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<div class="alert alert-error">生成失败: ${error.message}</div>`;
+      }
+    }
+
+    // 删除密钥
+    async function deleteKey(keyId) {
+      if (!confirm('确定要删除这个密钥吗？')) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/keys/${keyId}`, {
+          method: 'DELETE',
+          headers: getUserHeaders()
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        if (response.ok) {
+          loadKeys();
+        } else {
+          const data = await response.json();
+          alert('删除失败: ' + data.error);
+        }
+      } catch (error) {
+        alert('删除失败: ' + error.message);
+      }
+    }
+
+    // 复制到剪贴板
+    async function copyToClipboard(text, button) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const originalText = button.textContent;
+        button.textContent = '已复制!';
+        button.classList.add('copied');
+
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.classList.remove('copied');
+        }, 2000);
+      } catch (err) {
+        alert('复制失败');
+      }
+    }
+
+    // 切换页面
+    function switchPage(page) {
+      // 更新导航按钮状态
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // 切换页面内容
+      document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+      document.getElementById(`page-${page}`).classList.add('active');
+
+      // 加载特定页面数据
+      if (page === 'keys') {
+        loadKeys2();
+      } else if (page === 'tokens') {
+        loadUserTokens();
+      } else if (page === 'docs') {
+        loadModels();
+        updateApiUrls();
+      } else if (page === 'test') {
+        loadModels();
+      } else if (page === 'settings') {
+        loadSettings();
+      }
+    }
+
+    // 发送测试消息
+    async function sendTestMessage() {
+      const model = document.getElementById('testModel').value;
+      const message = document.getElementById('testMessage').value.trim();
+      const stream = document.getElementById('testStream').checked;
+      const resultEl = document.getElementById('testResult');
+      const responseEl = document.getElementById('testResponse');
+
+      if (!model) {
+        resultEl.innerHTML = '<div class="alert alert-error">请选择模型</div>';
+        return;
+      }
+      if (!message) {
+        resultEl.innerHTML = '<div class="alert alert-error">请输入测试消息</div>';
+        return;
+      }
+
+      // 获取用户的第一个 API 密钥
+      const keys = await getUserApiKeys();
+      if (!keys || keys.length === 0) {
+        resultEl.innerHTML = '<div class="alert alert-error">请先生成一个 API 密钥</div>';
+        return;
+      }
+      const apiKey = keys[0].key;
+
+      resultEl.innerHTML = '<div class="alert alert-info">正在发送请求...</div>';
+      responseEl.innerHTML = '<span style="color: #94a3b8;">请求中...</span>';
+
+      const requestBody = {
+        model: model,
+        messages: [{ role: 'user', content: message }],
+        stream: stream
+      };
+
+      try {
+        const startTime = Date.now();
+
+        if (stream) {
+          // 流式请求
+          const response = await fetch(window.location.origin + '/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error('HTTP ' + response.status + ': ' + error);
+          }
+
+          responseEl.innerHTML = '';
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let fullContent = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                try {
+                  const json = JSON.parse(data);
+                  const content = json.choices?.[0]?.delta?.content || '';
+                  if (content) {
+                    fullContent += content;
+                    responseEl.textContent = fullContent;
+                    responseEl.scrollTop = responseEl.scrollHeight;
+                  }
+                } catch (e) {
+                  // 忽略解析错误
+                }
+              }
+            }
+          }
+
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+          resultEl.innerHTML = '<div class="alert alert-success">请求成功！耗时: ' + elapsed + 's</div>';
+        } else {
+          // 非流式请求
+          const response = await fetch(window.location.origin + '/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error('HTTP ' + response.status + ': ' + error);
+          }
+
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content || JSON.stringify(data, null, 2);
+          responseEl.textContent = content;
+          resultEl.innerHTML = '<div class="alert alert-success">请求成功！耗时: ' + elapsed + 's</div>';
+        }
+      } catch (error) {
+        resultEl.innerHTML = '<div class="alert alert-error">请求失败: ' + error.message + '</div>';
+        responseEl.innerHTML = '<span style="color: #ef4444;">' + error.message + '</span>';
+      }
+    }
+
+    // 获取用户 API 密钥
+    async function getUserApiKeys() {
+      try {
+        const response = await fetch(API_BASE + '/admin/user/keys', {
+          headers: { 'X-User-Token': userToken }
+        });
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (e) {}
+      return [];
+    }
+
+    // 添加 Google Token
+    async function addGoogleToken() {
+      try {
+        // 从服务端获取 OAuth 配置（公开接口，不需要登录）
+        const configResponse = await fetch(`${API_BASE}/admin/oauth-config`);
+        const config = await configResponse.json();
+
+        if (!config.clientId) {
+          alert('OAuth 未配置，请联系管理员在系统设置中配置 Google OAuth');
+          return;
+        }
+
+        const clientId = config.clientId;
+        const redirectUri = `${API_BASE}/admin/oauth-callback`;
+        const scope = [
+          'https://www.googleapis.com/auth/cloud-platform',
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile',
+          'https://www.googleapis.com/auth/cclog',
+          'https://www.googleapis.com/auth/experimentsandconfigs'
+        ].join(' ');
+
+        const params = new URLSearchParams({
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          response_type: 'code',
+          scope: scope,
+          access_type: 'offline',
+          prompt: 'consent'
+        });
+
+        // 保存当前 userToken 以便回调后恢复
+        localStorage.setItem('userTokenTemp', userToken);
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+      } catch (error) {
+        alert('获取 OAuth 配置失败: ' + error.message);
+      }
+    }
+
+    // 从回调链接添加 Token
+    async function addTokenFromCallback() {
+      const callbackUrl = document.getElementById('callbackUrl').value.trim();
+      const resultEl = document.getElementById('callbackResult');
+
+      if (!callbackUrl) {
+        resultEl.innerHTML = '<div class="alert alert-error">请输入回调链接</div>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/tokens/callback`, {
+          method: 'POST',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ callback_url: callbackUrl })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultEl.innerHTML = '<div class="alert alert-success">Token 添加成功！</div>';
+          document.getElementById('callbackUrl').value = '';
+          loadUserTokens();
+        } else {
+          resultEl.innerHTML = `<div class="alert alert-error">${data.error || 'Token 添加失败'}</div>`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<div class="alert alert-error">添加失败: ${error.message}</div>`;
+      }
+    }
+
+    // 加载用户 Token 列表
+    async function loadUserTokens() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/tokens`, {
+          headers: getUserHeaders()
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const tokens = await response.json();
+        const container = document.getElementById('tokenList');
+
+        // 更新 Token 统计
+        const sharedCount = tokens.filter(t => t.isShared).length;
+        const totalSharedUsage = tokens.filter(t => t.isShared).reduce((sum, t) => sum + (t.usageToday || 0), 0);
+
+        document.getElementById('tokenCount').textContent = tokens.length;
+        document.getElementById('sharedTokenCount').textContent = sharedCount;
+        document.getElementById('sharedUsageToday').textContent = totalSharedUsage;
+
+        if (tokens.length === 0) {
+          // 设置统计为 0
+          document.getElementById('tokenCount').textContent = '0';
+          document.getElementById('sharedTokenCount').textContent = '0';
+          document.getElementById('sharedUsageToday').textContent = '0';
+
+          container.innerHTML = `
+            <div class="empty-state">
+              <p>暂无 Token</p>
+              <p>点击上方按钮添加您的第一个 Google Token</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = tokens.map((token, index) => `
+          <div class="key-item">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="font-weight: 600; color: var(--dark);">${token.email || 'Token #' + (index + 1)}</div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                ${token.isShared ? `<span style="padding: 4px 8px; border-radius: 6px; font-size: 0.85em; background: #dbeafe; color: #1e40af;">
+                  已共享 (${token.usageToday || 0}/${token.dailyLimit || 100})
+                </span>` : ''}
+                <span style="padding: 4px 8px; border-radius: 6px; font-size: 0.85em; ${token.enable ? 'background: #d1fae5; color: #065f46;' : 'background: #fee2e2; color: #991b1b;'}">
+                  ${token.enable ? '已启用' : '已禁用'}
+                </span>
+              </div>
+            </div>
+            <div class="key-value">Access Token: ${token.access_token.substring(0, 30)}...</div>
+            ${token.refresh_token ? `<div class="key-value">Refresh Token: ${token.refresh_token.substring(0, 30)}...</div>` : ''}
+
+            <!-- 共享设置 -->
+            <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin: 10px 0; border: 1px solid var(--border);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="margin: 0; display: flex; align-items: center; cursor: pointer;">
+                  <input type="checkbox" id="share-${index}" ${token.isShared ? 'checked' : ''}
+                    onchange="toggleTokenSharing(${index}, this.checked)"
+                    style="width: auto; margin-right: 8px; cursor: pointer;">
+                  <span style="font-weight: 600; color: var(--dark);">共享此 Token</span>
+                </label>
+              </div>
+              ${token.isShared || true ? `
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <label style="margin: 0; font-size: 0.9em; color: var(--gray);">每日限制:</label>
+                <input type="number" id="limit-${index}" value="${token.dailyLimit || 100}"
+                  min="1" max="10000"
+                  style="width: 120px; padding: 6px 10px; font-size: 0.9em;"
+                  onchange="updateDailyLimit(${index}, this.value)">
+                <small style="color: var(--gray);">次/天</small>
+                ${token.isShared ? `<small style="color: var(--info); margin-left: 10px;">今日已用: ${token.usageToday || 0} 次</small>` : ''}
+              </div>
+              ` : ''}
+            </div>
+
+            <div class="key-meta">
+              <div>
+                <small>添加时间: ${new Date(token.timestamp).toLocaleString()}</small>
+                <small style="margin-left: 15px;">过期时间: ${token.expires_in}秒</small>
+              </div>
+              <div class="flex-buttons">
+                <button class="btn-danger" onclick="deleteUserToken(${index})">删除</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('加载 Token 失败:', error);
+      }
+    }
+
+    // 手动添加 Token
+    async function addManualToken() {
+      const accessToken = document.getElementById('manualAccessToken').value.trim();
+      const refreshToken = document.getElementById('manualRefreshToken').value.trim();
+      const expiresIn = parseInt(document.getElementById('manualExpiresIn').value) || 3600;
+      const resultEl = document.getElementById('manualTokenResult');
+
+      if (!accessToken) {
+        resultEl.innerHTML = '<div class="alert alert-error">请输入 Access Token</div>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/tokens/direct`, {
+          method: 'POST',
+          headers: getUserHeaders(),
+          body: JSON.stringify({
+            access_token: accessToken,
+            refresh_token: refreshToken || null,
+            expires_in: expiresIn
+          })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultEl.innerHTML = '<div class="alert alert-success">Token 添加成功！</div>';
+          document.getElementById('manualAccessToken').value = '';
+          document.getElementById('manualRefreshToken').value = '';
+          document.getElementById('manualExpiresIn').value = '3600';
+          loadUserTokens();
+        } else {
+          resultEl.innerHTML = `<div class="alert alert-error">${data.error || 'Token 添加失败'}</div>`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<div class="alert alert-error">添加失败: ${error.message}</div>`;
+      }
+    }
+
+    // 删除用户 Token
+    async function deleteUserToken(index) {
+      if (!confirm('确定要删除这个 Token 吗？')) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/tokens/${index}`, {
+          method: 'DELETE',
+          headers: getUserHeaders()
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          loadUserTokens();
+        } else {
+          alert('删除失败: ' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        alert('删除失败: ' + error.message);
+      }
+    }
+
+    // 切换 Token 共享状态
+    async function toggleTokenSharing(index, isShared) {
+      try {
+        const dailyLimit = parseInt(document.getElementById(`limit-${index}`).value) || 100;
+
+        const response = await fetch(`${API_BASE}/admin/user/tokens/${index}/sharing`, {
+          method: 'PATCH',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ isShared, dailyLimit })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          loadUserTokens();
+        } else {
+          alert('更新共享设置失败: ' + (data.error || '未知错误'));
+          loadUserTokens(); // 恢复原状
+        }
+      } catch (error) {
+        alert('更新共享设置失败: ' + error.message);
+        loadUserTokens(); // 恢复原状
+      }
+    }
+
+    // 更新每日限制
+    async function updateDailyLimit(index, dailyLimit) {
+      const isShared = document.getElementById(`share-${index}`).checked;
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/tokens/${index}/sharing`, {
+          method: 'PATCH',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ isShared, dailyLimit: parseInt(dailyLimit) })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          alert('更新每日限制失败: ' + (data.error || '未知错误'));
+          loadUserTokens(); // 恢复原状
+        }
+      } catch (error) {
+        alert('更新每日限制失败: ' + error.message);
+        loadUserTokens(); // 恢复原状
+      }
+    }
+
+    // 更新 API URLs
+    function updateApiUrls() {
+      document.querySelectorAll('.apiBaseUrl2').forEach(el => {
+        el.textContent = API_BASE;
+      });
+    }
+
+    // 加载密钥列表（密钥管理页面）
+    async function loadKeys2() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/keys`, {
+          headers: getUserHeaders()
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const keys = await response.json();
+        const container = document.getElementById('keyList2');
+
+        if (keys.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <p>暂无密钥</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = keys.map(key => `
+          <div class="key-item">
+            <div style="font-weight: 600; color: var(--dark);">${key.name}</div>
+            <div class="key-value">${key.key}</div>
+            <div class="key-meta">
+              <div>
+                <small>创建时间: ${new Date(key.created).toLocaleString()}</small>
+                ${key.lastUsed ? `<small style="margin-left: 15px;">上次使用: ${new Date(key.lastUsed).toLocaleString()}</small>` : ''}
+                <small style="margin-left: 15px;">请求次数: ${key.requests || 0}</small>
+              </div>
+              <div class="flex-buttons">
+                <button class="copy-btn" onclick="copyToClipboard('${key.key}', this)">复制</button>
+                <button class="btn-danger" onclick="deleteKey('${key.id}')">删除</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('加载密钥失败:', error);
+      }
+    }
+
+    // 生成密钥（密钥管理页面）
+    async function generateKey2() {
+      const name = document.getElementById('keyName2').value || '未命名';
+      const resultEl = document.getElementById('generateResult2');
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/keys/generate`, {
+          method: 'POST',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ name })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultEl.innerHTML = `
+            <div class="alert alert-success">
+              密钥生成成功！<br>
+              <strong style="word-break: break-all;">${data.key.key}</strong><br>
+              <small>请妥善保存，此密钥不会再次完整显示！</small>
+            </div>
+          `;
+          document.getElementById('keyName2').value = '';
+          loadKeys2();
+          loadKeys(); // 同时刷新首页
+        } else {
+          resultEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<div class="alert alert-error">生成失败: ${error.message}</div>`;
+      }
+    }
+
+    // 加载模型列表
+    async function loadModels() {
+      try {
+        // 获取用户的 API Key 用于认证
+        const keys = await getUserApiKeys();
+        const apiKey = keys && keys.length > 0 ? keys[0].key : null;
+
+        const headers = {};
+        if (apiKey) {
+          headers['Authorization'] = 'Bearer ' + apiKey;
+        }
+
+        const response = await fetch(window.location.origin + '/v1/models', { headers });
+        const data = await response.json();
+
+        // 更新 API 文档页面的模型列表
+        const container = document.getElementById('modelList');
+        if (container) {
+          if (data.data && data.data.length > 0) {
+            container.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">' +
+              data.data.map(function(model) {
+                return '<div style="background: #f8f9fa; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border);">' +
+                  '<div style="font-weight: 600; color: var(--dark); font-size: 0.9em;">' + model.id + '</div>' +
+                '</div>';
+              }).join('') +
+            '</div>';
+          } else {
+            container.innerHTML = '<p style="color: var(--gray);">暂无可用模型</p>';
+          }
+        }
+
+        // 更新测试页面的模型选择器
+        const testModelSelect = document.getElementById('testModel');
+        if (testModelSelect) {
+          if (data.data && data.data.length > 0) {
+            testModelSelect.innerHTML = data.data.map(function(model) {
+              return '<option value="' + model.id + '">' + model.id + '</option>';
+            }).join('');
+          } else {
+            testModelSelect.innerHTML = '<option value="">暂无可用模型</option>';
+          }
+        }
+      } catch (error) {
+        const container = document.getElementById('modelList');
+        if (container) {
+          container.innerHTML = '<p style="color: var(--danger);">加载模型列表失败: ' + error.message + '</p>';
+        }
+        const testModelSelect = document.getElementById('testModel');
+        if (testModelSelect) {
+          testModelSelect.innerHTML = '<option value="">加载失败</option>';
+        }
+      }
+    }
+
+    // 加载用户设置
+    async function loadSettings() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/profile`, {
+          headers: getUserHeaders()
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const user = await response.json();
+
+        document.getElementById('settingsUsername').value = user.username || '';
+        document.getElementById('settingsEmail').value = user.email || '';
+        document.getElementById('systemPrompt').value = user.systemPrompt || '';
+        document.getElementById('registerTime').textContent = user.created ? new Date(user.created).toLocaleString() : '-';
+
+        // 加载密钥数量
+        const keysResponse = await fetch(`${API_BASE}/admin/user/keys`, {
+          headers: getUserHeaders()
+        });
+        const keys = await keysResponse.json();
+        document.getElementById('settingsKeyCount').textContent = keys.length;
+      } catch (error) {
+        console.error('加载设置失败:', error);
+      }
+    }
+
+    // 更新个人信息
+    async function updateProfile() {
+      const email = document.getElementById('settingsEmail').value;
+      const resultEl = document.getElementById('profileResult');
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/profile`, {
+          method: 'PATCH',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ email })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultEl.innerHTML = '<div class="alert alert-success">信息更新成功！</div>';
+        } else {
+          resultEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<div class="alert alert-error">更新失败: ${error.message}</div>`;
+      }
+    }
+
+    // 修改密码
+    async function changePassword() {
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmNewPassword').value;
+      const resultEl = document.getElementById('passwordResult');
+
+      if (!newPassword) {
+        resultEl.innerHTML = '<div class="alert alert-error">请输入新密码</div>';
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        resultEl.innerHTML = '<div class="alert alert-error">两次输入的密码不一致</div>';
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        resultEl.innerHTML = '<div class="alert alert-error">密码长度至少为6个字符</div>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/profile`, {
+          method: 'PATCH',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ password: newPassword })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultEl.innerHTML = '<div class="alert alert-success">密码修改成功！</div>';
+          document.getElementById('newPassword').value = '';
+          document.getElementById('confirmNewPassword').value = '';
+        } else {
+          resultEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<div class="alert alert-error">修改失败: ${error.message}</div>`;
+      }
+    }
+
+    // 更新系统提示词
+    async function updateSystemPrompt() {
+      const systemPrompt = document.getElementById('systemPrompt').value.trim();
+      const resultEl = document.getElementById('systemPromptResult');
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/user/profile`, {
+          method: 'PATCH',
+          headers: getUserHeaders(),
+          body: JSON.stringify({ systemPrompt: systemPrompt || null })
+        });
+
+        if (response.status === 401) {
+          doUserLogout();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultEl.innerHTML = '<div class="alert alert-success">系统提示词保存成功！</div>';
+          setTimeout(() => {
+            resultEl.innerHTML = '';
+          }, 3000);
+        } else {
+          resultEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<div class="alert alert-error">保存失败: ${error.message}</div>`;
+      }
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 初始化验证码
+      refreshCaptcha();
+
+      const isLoggedIn = await verifyUserSession();
+      if (isLoggedIn) {
+        document.getElementById('authOverlay').classList.add('hidden');
+        loadUserData();
+      }
+    });
+  </script>
+</body>
+</html>

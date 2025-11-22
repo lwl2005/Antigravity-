@@ -246,6 +246,58 @@ function exchangeCodeForToken(code, port, origin) {
   });
 }
 
+// 直接添加 Token
+export async function addDirectToken(tokenData) {
+  try {
+    const { access_token, refresh_token, expires_in } = tokenData;
+
+    // 验证必填字段
+    if (!access_token) {
+      throw new Error('access_token 是必填项');
+    }
+
+    logger.info('正在添加直接输入的 Token...');
+
+    // 加载现有账号
+    const accounts = await loadAccounts();
+
+    // 检查是否已存在相同的 access_token
+    const exists = accounts.some(acc => acc.access_token === access_token);
+    if (exists) {
+      logger.warn('Token 已存在，跳过添加');
+      return {
+        success: false,
+        error: '该 Token 已存在于账号列表中'
+      };
+    }
+
+    // 创建新账号
+    const newAccount = {
+      access_token,
+      refresh_token: refresh_token || null,
+      expires_in: expires_in || 3600,
+      timestamp: Date.now(),
+      enable: true
+    };
+
+    // 添加到账号列表
+    accounts.push(newAccount);
+
+    // 保存账号
+    await saveAccounts(accounts);
+
+    logger.info('Token 添加成功');
+    return {
+      success: true,
+      message: 'Token 添加成功',
+      index: accounts.length - 1
+    };
+  } catch (error) {
+    logger.error('添加 Token 失败:', error);
+    throw error;
+  }
+}
+
 // 批量导入 Token
 export async function importTokens(filePath) {
   try {

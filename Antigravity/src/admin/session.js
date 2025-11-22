@@ -66,7 +66,7 @@ setInterval(cleanupSessions, 60 * 60 * 1000);
 
 // 管理员认证中间件
 export function adminAuth(req, res, next) {
-  const token = req.headers['x-admin-token'] || req.query.token;
+  const token = req.headers['x-admin-token'] || req.headers['x-admin-session'] || req.query.token;
 
   if (validateSession(token)) {
     next();

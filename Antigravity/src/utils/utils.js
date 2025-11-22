@@ -213,9 +213,22 @@ function generateRequestBody(openaiMessages,modelName,parameters,openaiTools){
     userAgent: "antigravity"
   }
 }
+// HTML转义函数，防止XSS攻击
+function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export{
   generateRequestId,
   generateSessionId,
   generateProjectId,
-  generateRequestBody
+  generateRequestBody,
+  escapeHtml
 }

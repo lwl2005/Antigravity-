@@ -10,10 +10,32 @@ import log from '../src/utils/logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ACCOUNTS_FILE = path.join(__dirname, '..', 'data', 'accounts.json');
+const CONFIG_FILE = path.join(__dirname, '..', 'config.json');
 
-const CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
+// 从配置文件读取 OAuth 配置
+function loadOAuthConfig() {
+  try {
+    const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+    return {
+      clientId: config.oauth?.clientId || '',
+      clientSecret: config.oauth?.clientSecret || ''
+    };
+  } catch {
+    return { clientId: '', clientSecret: '' };
+  }
+}
+
+const oauthConfig = loadOAuthConfig();
+const CLIENT_ID = oauthConfig.clientId;
+const CLIENT_SECRET = oauthConfig.clientSecret;
 const STATE = crypto.randomUUID();
+
+// 检查 OAuth 配置
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  log.error('错误：未配置 OAuth Client ID 或 Client Secret');
+  log.error('请在管理后台的"系统设置"中配置 Google OAuth 信息');
+  process.exit(1);
+}
 
 const SCOPES = [
   'https://www.googleapis.com/auth/cloud-platform',
@@ -142,11 +164,15 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(0, () => {
+// 使用固定端口，需要在 Google Cloud Console 配置对应的重定向 URI
+const OAUTH_PORT = 8099;
+
+server.listen(OAUTH_PORT, () => {
   const port = server.address().port;
   const authUrl = generateAuthUrl(port);
   log.info(`服务器运行在 http://localhost:${port}`);
   log.info('请在浏览器中打开以下链接进行登录：');
   console.log(`\n${authUrl}\n`);
   log.info('等待授权回调...');
+  log.info('注意：需要在 Google Cloud Console 中添加重定向 URI: http://localhost:8099/oauth-callback');
 });
