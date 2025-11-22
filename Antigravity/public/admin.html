@@ -479,6 +479,8 @@
             <button class="nav-tab active" onclick="switchTab('home')">首页</button>
             <button class="nav-tab" onclick="switchTab('tokens')">令牌管理</button>
             <button class="nav-tab" onclick="switchTab('keys')">API密钥</button>
+            <button class="nav-tab" onclick="switchTab('announcements')">公告管理</button>
+            <button class="nav-tab" onclick="switchTab('models')">模型管理</button>
             <button class="nav-tab" onclick="switchTab('test')">测试面板</button>
             <button class="nav-tab" onclick="switchTab('docs')">文档</button>
             <button class="nav-tab" onclick="switchTab('logs')">日志</button>
@@ -598,6 +600,79 @@
                 <ul class="key-list" id="keyList">
                     <li style="text-align: center; color: #9ca3af;">未找到密钥</li>
                 </ul>
+            </div>
+        </div>
+
+        <!-- Announcements -->
+        <div id="announcements" class="tab-content">
+            <div class="card">
+                <h3>创建新公告</h3>
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="announcementTitle" placeholder="公告标题">
+                </div>
+                <div class="form-group">
+                    <label>内容</label>
+                    <textarea id="announcementContent" rows="4" placeholder="公告内容" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-family: inherit;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>类型</label>
+                    <select id="announcementType" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px;">
+                        <option value="info">信息 (蓝色)</option>
+                        <option value="success">成功 (绿色)</option>
+                        <option value="warning">警告 (橙色)</option>
+                        <option value="danger">危险 (红色)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="announcementPinned" style="width: auto;">
+                        置顶此公告
+                    </label>
+                </div>
+                <button onclick="createAnnouncement()" class="btn-success">创建公告</button>
+            </div>
+
+            <div class="card">
+                <h3>公告列表</h3>
+                <div id="announcementsList">
+                    <div style="text-align: center; color: #9ca3af; padding: 40px;">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Models -->
+        <div id="models" class="tab-content">
+            <div class="card">
+                <div class="flex-buttons" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;">模型配额管理</h3>
+                    <button onclick="fetchModelsFromAPI()" class="btn-success">从API获取模型列表</button>
+                </div>
+                <div id="modelsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;">
+                    <div style="text-align: center; color: #9ca3af; padding: 40px; grid-column: 1 / -1;">加载中...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>模型使用统计</h3>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <h3>总模型数</h3>
+                        <div class="value" id="totalModels">0</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>已启用模型</h3>
+                        <div class="value green" id="enabledModels">0</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>今日总使用次数</h3>
+                        <div class="value" id="totalUsageToday">0</div>
+                    </div>
+                    <div class="status-card">
+                        <h3>活跃用户数</h3>
+                        <div class="value" id="activeUsersToday">0</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1008,6 +1083,8 @@
             // 加载对应数据
             if (tabName === 'tokens') loadTokens();
             if (tabName === 'keys') loadKeys();
+            if (tabName === 'announcements') loadAnnouncements();
+            if (tabName === 'models') loadModelsData();
             if (tabName === 'logs') loadLogs();
             if (tabName === 'monitor') loadMonitorData();
             if (tabName === 'home') loadHomeData();
@@ -2417,6 +2494,307 @@
                 document.getElementById('loginOverlay').classList.remove('hidden');
             }
         });
+
+        // ========== 公告管理函数 ==========
+
+        // 加载公告列表
+        async function loadAnnouncements() {
+            try {
+                const response = await apiRequest('/admin/announcements');
+                const announcements = await response.json();
+
+                const container = document.getElementById('announcementsList');
+                if (announcements.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #9ca3af; padding: 40px;">暂无公告</div>';
+                    return;
+                }
+
+                container.innerHTML = announcements.map(a => `
+                    <div class="card" style="margin-bottom: 16px; border-left: 4px solid ${getAnnouncementColor(a.type)};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; color: #111827;">${escapeHtml(a.title)}</h4>
+                                <small style="color: #6b7280;">
+                                    ${a.pinned ? '<span style="background: #fbbf24; color: #78350f; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 8px;">📌 置顶</span>' : ''}
+                                    <span style="background: ${getAnnouncementBg(a.type)}; color: ${getAnnouncementColor(a.type)}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${getAnnouncementTypeText(a.type)}</span>
+                                    <span style="margin-left: 8px;">${new Date(a.created).toLocaleString('zh-CN')}</span>
+                                </small>
+                            </div>
+                            <div class="flex-buttons">
+                                <button onclick="toggleAnnouncementStatus('${a.id}', ${!a.enabled})" class="${a.enabled ? 'btn-warning' : 'btn-success'}" style="font-size: 13px; padding: 6px 12px;">
+                                    ${a.enabled ? '禁用' : '启用'}
+                                </button>
+                                <button onclick="deleteAnnouncement('${a.id}')" class="btn-danger" style="font-size: 13px; padding: 6px 12px;">删除</button>
+                            </div>
+                        </div>
+                        <div style="color: #4b5563; white-space: pre-wrap;">${escapeHtml(a.content)}</div>
+                        <div style="margin-top: 8px; font-size: 12px; color: #9ca3af;">
+                            状态: ${a.enabled ? '<span style="color: #10b981;">已启用</span>' : '<span style="color: #ef4444;">已禁用</span>'}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('加载公告失败:', error);
+                document.getElementById('announcementsList').innerHTML = '<div style="text-align: center; color: #ef4444; padding: 40px;">加载失败: ' + error.message + '</div>';
+            }
+        }
+
+        // 创建公告
+        async function createAnnouncement() {
+            const title = document.getElementById('announcementTitle').value.trim();
+            const content = document.getElementById('announcementContent').value.trim();
+            const type = document.getElementById('announcementType').value;
+            const pinned = document.getElementById('announcementPinned').checked;
+
+            if (!title || !content) {
+                alert('请填写标题和内容');
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/admin/announcements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content, type, pinned })
+                });
+
+                if (response.ok) {
+                    alert('公告创建成功！');
+                    document.getElementById('announcementTitle').value = '';
+                    document.getElementById('announcementContent').value = '';
+                    document.getElementById('announcementPinned').checked = false;
+                    loadAnnouncements();
+                } else {
+                    const error = await response.json();
+                    alert('创建失败: ' + error.error);
+                }
+            } catch (error) {
+                alert('创建失败: ' + error.message);
+            }
+        }
+
+        // 切换公告状态
+        async function toggleAnnouncementStatus(id, enabled) {
+            try {
+                const response = await apiRequest(`/admin/announcements/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+
+                if (response.ok) {
+                    loadAnnouncements();
+                } else {
+                    const error = await response.json();
+                    alert('操作失败: ' + error.error);
+                }
+            } catch (error) {
+                alert('操作失败: ' + error.message);
+            }
+        }
+
+        // 删除公告
+        async function deleteAnnouncement(id) {
+            if (!confirm('确定要删除这条公告吗？')) return;
+
+            try {
+                const response = await apiRequest(`/admin/announcements/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('公告已删除');
+                    loadAnnouncements();
+                } else {
+                    const error = await response.json();
+                    alert('删除失败: ' + error.error);
+                }
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+
+        // 辅助函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getAnnouncementColor(type) {
+            const colors = {
+                info: '#3b82f6',
+                success: '#10b981',
+                warning: '#f59e0b',
+                danger: '#ef4444'
+            };
+            return colors[type] || colors.info;
+        }
+
+        function getAnnouncementBg(type) {
+            const bgs = {
+                info: '#eff6ff',
+                success: '#f0fdf4',
+                warning: '#fffbeb',
+                danger: '#fef2f2'
+            };
+            return bgs[type] || bgs.info;
+        }
+
+        function getAnnouncementTypeText(type) {
+            const texts = {
+                info: '信息',
+                success: '成功',
+                warning: '警告',
+                danger: '危险'
+            };
+            return texts[type] || texts.info;
+        }
+
+        // ========== 模型管理函数 ==========
+
+        // 加载模型数据
+        async function loadModelsData() {
+            await Promise.all([loadModelsList(), loadModelsStats()]);
+        }
+
+        // 加载模型列表
+        async function loadModelsList() {
+            try {
+                const response = await apiRequest('/admin/models');
+                const models = await response.json();
+
+                const grid = document.getElementById('modelsGrid');
+                if (models.length === 0) {
+                    grid.innerHTML = '<div style="text-align: center; color: #9ca3af; padding: 40px; grid-column: 1 / -1;">暂无模型<br><small style="margin-top: 8px; display: block;">点击"从API获取模型列表"按钮获取</small></div>';
+                    return;
+                }
+
+                grid.innerHTML = models.map(m => `
+                    <div class="card" style="margin: 0;">
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="margin: 0 0 4px 0; color: #111827; font-size: 15px;">${m.name}</h4>
+                            <small style="color: #6b7280; font-size: 12px;">ID: ${m.id}</small>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px;">每日配额</label>
+                            <input type="number" id="quota_${m.id}" value="${m.quota}" min="0" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                        </div>
+
+                        <div class="flex-buttons" style="justify-content: space-between;">
+                            <button onclick="updateModelQuota('${m.id}')" class="btn-success" style="font-size: 13px; padding: 8px 12px; flex: 1;">更新配额</button>
+                            <button onclick="toggleModel('${m.id}', ${!m.enabled})" class="${m.enabled ? 'btn-warning' : 'btn-success'}" style="font-size: 13px; padding: 8px 12px; flex: 1; margin-left: 8px;">
+                                ${m.enabled ? '禁用' : '启用'}
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>状态:</span>
+                                <span style="color: ${m.enabled ? '#10b981' : '#ef4444'}; font-weight: 600;">${m.enabled ? '已启用' : '已禁用'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('加载模型列表失败:', error);
+                document.getElementById('modelsGrid').innerHTML = '<div style="text-align: center; color: #ef4444; padding: 40px; grid-column: 1 / -1;">加载失败: ' + error.message + '</div>';
+            }
+        }
+
+        // 加载模型统计
+        async function loadModelsStats() {
+            try {
+                const response = await apiRequest('/admin/models/stats');
+                const stats = await response.json();
+
+                document.getElementById('totalModels').textContent = stats.totalModels || 0;
+                document.getElementById('enabledModels').textContent = stats.enabledModels || 0;
+                document.getElementById('totalUsageToday').textContent = stats.totalUsageToday || 0;
+
+                // 计算活跃用户数
+                const uniqueUsers = new Set();
+                if (stats.models) {
+                    stats.models.forEach(m => {
+                        if (m.userCount > 0) uniqueUsers.add(m.userCount);
+                    });
+                }
+                document.getElementById('activeUsersToday').textContent = stats.models ? stats.models.filter(m => m.userCount > 0).length : 0;
+            } catch (error) {
+                console.error('加载模型统计失败:', error);
+            }
+        }
+
+        // 从API获取模型列表
+        async function fetchModelsFromAPI() {
+            if (!confirm('确定要从API获取模型列表吗？这将覆盖现有配置。')) return;
+
+            try {
+                const response = await apiRequest('/admin/models/fetch', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`成功获取 ${result.models.length} 个模型！`);
+                    await loadModelsData();
+                } else {
+                    const error = await response.json();
+                    alert('获取失败: ' + error.error);
+                }
+            } catch (error) {
+                alert('获取失败: ' + error.message);
+            }
+        }
+
+        // 更新模型配额
+        async function updateModelQuota(modelId) {
+            const quota = parseInt(document.getElementById(`quota_${modelId}`).value);
+
+            if (isNaN(quota) || quota < 0) {
+                alert('请输入有效的配额值');
+                return;
+            }
+
+            try {
+                const response = await apiRequest(`/admin/models/${modelId}/quota`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quota })
+                });
+
+                if (response.ok) {
+                    alert('配额更新成功！');
+                    await loadModelsStats();
+                } else {
+                    const error = await response.json();
+                    alert('更新失败: ' + error.error);
+                }
+            } catch (error) {
+                alert('更新失败: ' + error.message);
+            }
+        }
+
+        // 启用/禁用模型
+        async function toggleModel(modelId, enabled) {
+            try {
+                const response = await apiRequest(`/admin/models/${modelId}/toggle`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+
+                if (response.ok) {
+                    await loadModelsData();
+                } else {
+                    const error = await response.json();
+                    alert('操作失败: ' + error.error);
+                }
+            } catch (error) {
+                alert('操作失败: ' + error.message);
+            }
+        }
     </script>
 </body>
 
