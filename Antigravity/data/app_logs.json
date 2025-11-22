@@ -1,0 +1,677 @@
+[
+  {
+    "timestamp": "2025-11-22T15:05:51.996Z",
+    "level": "info",
+    "message": "日志已清空"
+  },
+  {
+    "timestamp": "2025-11-22T15:06:03.658Z",
+    "level": "success",
+    "message": "系统设置已更新"
+  },
+  {
+    "timestamp": "2025-11-22T15:06:10.500Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (3ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:06:13.287Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (2ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:06:27.384Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (1627ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:07:28.352Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (545ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:07:30.000Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (360ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:07:37.402Z",
+    "level": "info",
+    "message": "POST /v1/chat/completions - 500 (2ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:09:50.660Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (101ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:09:55.759Z",
+    "level": "success",
+    "message": "成功获取并保存了 14 个模型"
+  },
+  {
+    "timestamp": "2025-11-22T15:10:05.546Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (113ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:10:09.416Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (534ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:10:17.297Z",
+    "level": "info",
+    "message": "POST /v1/chat/completions - 200 (1981ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:10:34.693Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (480ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:11:32.917Z",
+    "level": "warn",
+    "message": "Token 账号 0 已删除"
+  },
+  {
+    "timestamp": "2025-11-22T15:11:37.569Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T15:12:43.365Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (1431ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:12:53.504Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (785ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:12:58.426Z",
+    "level": "info",
+    "message": "POST /v1/chat/completions - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:13:22.380Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (2ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:13:23.284Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:13:51.096Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (6ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:13:51.654Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (4ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:17:26.704Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T15:17:34.297Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (250ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:19:06.126Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (135ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:19:15.032Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (959ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:19:20.114Z",
+    "level": "info",
+    "message": "POST /v1/chat/completions - 200 (1536ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:19:49.531Z",
+    "level": "info",
+    "message": "POST /v1/chat/completions - 200 (2070ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:19:59.453Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (520ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:20:03.630Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (918ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:20:20.271Z",
+    "level": "info",
+    "message": "POST /v1/chat/completions - 200 (8602ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:21:50.916Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (460ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:28:37.126Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T15:28:41.672Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (1077ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:28:48.273Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (560ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:29:03.827Z",
+    "level": "success",
+    "message": "密钥已生成: 自用测试, 额度: $10"
+  },
+  {
+    "timestamp": "2025-11-22T15:36:32.836Z",
+    "level": "warn",
+    "message": "余额不足: sk-2ef1443..."
+  },
+  {
+    "timestamp": "2025-11-22T15:36:54.570Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T15:37:03.986Z",
+    "level": "success",
+    "message": "密钥余额上限已更新: sk-2ef1443..., 新额度: 无限"
+  },
+  {
+    "timestamp": "2025-11-22T15:47:42.366Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T15:47:47.140Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (836ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:49:52.231Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (579ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:51:23.878Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:51:25.304Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T15:51:29.424Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T15:58:00.709Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:00:16.277Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:00:17.756Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (4ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:00:18.838Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (2ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:00:22.006Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (2ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:00:29.626Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:01:02.657Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:01:07.883Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:01:08.568Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:01:20.615Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (4ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:01:29.376Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:01:57.535Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (3ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:24.912Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:26.180Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:33.155Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (4ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:44.538Z",
+    "level": "error",
+    "message": "读取目录失败: ENOENT: no such file or directory, scandir 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\public'"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:45.909Z",
+    "level": "error",
+    "message": "读取目录失败: ENOENT: no such file or directory, scandir 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\src'"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:47.360Z",
+    "level": "error",
+    "message": "读取文件失败: ENOENT: no such file or directory, open 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\package.json'"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:48.889Z",
+    "level": "error",
+    "message": "读取文件失败: ENOENT: no such file or directory, open 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\config.json'"
+  },
+  {
+    "timestamp": "2025-11-22T16:02:50.315Z",
+    "level": "warn",
+    "message": "文件访问被拒绝 - 路径越界: ../../etc/passwd"
+  },
+  {
+    "timestamp": "2025-11-22T16:03:00.796Z",
+    "level": "error",
+    "message": "读取目录失败: ENOENT: no such file or directory, scandir 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\public'"
+  },
+  {
+    "timestamp": "2025-11-22T16:03:10.510Z",
+    "level": "info",
+    "message": "读取目录: public (5 项)"
+  },
+  {
+    "timestamp": "2025-11-22T16:03:28.806Z",
+    "level": "info",
+    "message": "读取目录: public (5 项)"
+  },
+  {
+    "timestamp": "2025-11-22T16:03:30.158Z",
+    "level": "info",
+    "message": "读取目录: src (6 项)"
+  },
+  {
+    "timestamp": "2025-11-22T16:03:31.772Z",
+    "level": "info",
+    "message": "读取文件: package.json"
+  },
+  {
+    "timestamp": "2025-11-22T16:03:33.409Z",
+    "level": "info",
+    "message": "读取文件: config.json"
+  },
+  {
+    "timestamp": "2025-11-22T16:03:54.321Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (4ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:04:32.225Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (1ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:04:32.831Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (5ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:04:40.010Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:05:02.527Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:05:02.706Z",
+    "level": "error",
+    "message": "登录失败: 登录流程失败"
+  },
+  {
+    "timestamp": "2025-11-22T16:05:05.684Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:05:05.849Z",
+    "level": "error",
+    "message": "登录失败: 登录流程失败"
+  },
+  {
+    "timestamp": "2025-11-22T16:05:32.511Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:06:06.073Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:06:08.658Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:06:19.281Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:07:05.169Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:07:08.850Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:07:31.256Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:07:33.631Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:08:34.906Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:08:43.276Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (971ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:12:18.697Z",
+    "level": "warn",
+    "message": "API Key 验证失败: GET /v1/models"
+  },
+  {
+    "timestamp": "2025-11-22T16:12:18.701Z",
+    "level": "info",
+    "message": "GET /v1/models - 401 (7ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:15:36.891Z",
+    "level": "warn",
+    "message": "API Key 验证失败: GET /v1/models"
+  },
+  {
+    "timestamp": "2025-11-22T16:15:36.897Z",
+    "level": "info",
+    "message": "GET /v1/models - 401 (19ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:17:11.146Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:17:29.815Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (448ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:17:47.433Z",
+    "level": "warn",
+    "message": "Token 账号 0 已删除"
+  },
+  {
+    "timestamp": "2025-11-22T16:19:44.216Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:19:46.415Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (638ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:21:38.449Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:21:43.285Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (5ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:21:49.646Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:21:50.738Z",
+    "level": "info",
+    "message": "GET /v1/models - 500 (2ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:22:29.607Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:22:55.389Z",
+    "level": "warn",
+    "message": "Token 账号 0 已删除"
+  },
+  {
+    "timestamp": "2025-11-22T16:22:57.637Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:26:42.792Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:26:52.298Z",
+    "level": "info",
+    "message": "Token 账号 0 已禁用"
+  },
+  {
+    "timestamp": "2025-11-22T16:26:53.467Z",
+    "level": "info",
+    "message": "Token 账号 0 已启用"
+  },
+  {
+    "timestamp": "2025-11-22T16:27:43.598Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:29:11.685Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:29:49.802Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:29:49.833Z",
+    "level": "error",
+    "message": "读取文件失败: ENOENT: no such file or directory, open 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\test_file.txt'"
+  },
+  {
+    "timestamp": "2025-11-22T16:29:49.841Z",
+    "level": "error",
+    "message": "编辑文件失败: ENOENT: no such file or directory, open 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\test_file.txt'"
+  },
+  {
+    "timestamp": "2025-11-22T16:29:49.862Z",
+    "level": "error",
+    "message": "读取文件失败: ENOENT: no such file or directory, open 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\test_file.txt'"
+  },
+  {
+    "timestamp": "2025-11-22T16:29:49.888Z",
+    "level": "error",
+    "message": "写入文件失败: ENOENT: no such file or directory, open 'C:\\Users\\h1933\\Antigravity-\\Antigravity\\Antigravity\\test_file.txt'"
+  },
+  {
+    "timestamp": "2025-11-22T16:30:18.530Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:30:18.550Z",
+    "level": "info",
+    "message": "读取文件: test_file.txt"
+  },
+  {
+    "timestamp": "2025-11-22T16:30:18.560Z",
+    "level": "info",
+    "message": "编辑文件: test_file.txt"
+  },
+  {
+    "timestamp": "2025-11-22T16:30:18.579Z",
+    "level": "info",
+    "message": "读取文件: test_file.txt"
+  },
+  {
+    "timestamp": "2025-11-22T16:30:18.600Z",
+    "level": "info",
+    "message": "写入文件: test_file.txt"
+  },
+  {
+    "timestamp": "2025-11-22T16:31:26.181Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:35:58.662Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:36:28.273Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:37:05.852Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:38:09.255Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:38:17.894Z",
+    "level": "info",
+    "message": "开始 Google OAuth 登录流程"
+  },
+  {
+    "timestamp": "2025-11-22T16:38:50.473Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:39:38.460Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:40:01.084Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (2404ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:40:05.345Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (894ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:40:23.502Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:43:15.254Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  },
+  {
+    "timestamp": "2025-11-22T16:44:45.893Z",
+    "level": "info",
+    "message": "GET /v1/models - 200 (492ms)"
+  },
+  {
+    "timestamp": "2025-11-22T16:48:47.668Z",
+    "level": "info",
+    "message": "管理员登录成功"
+  }
+]

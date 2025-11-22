@@ -1,0 +1,19 @@
+[
+  {
+    "key": "sk-2ef14437acfd67d6a65a42643bee5b6f1f7ca688bdd34ed2c3b5280edd978d12",
+    "name": "自用测试",
+    "created": "2025-11-22T15:29:03.822Z",
+    "lastUsed": "2025-11-22T16:48:53.458Z",
+    "requests": 69,
+    "rateLimit": {
+      "enabled": false,
+      "maxRequests": 100,
+      "windowMs": 60000
+    },
+    "usage": {},
+    "balance": 0,
+    "maxBalance": -1,
+    "totalSpent": 15.759,
+    "isUnlimited": true
+  }
+]

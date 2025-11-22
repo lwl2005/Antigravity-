@@ -70,15 +70,49 @@ export async function setTokenProxy(index, proxyId) {
   return true;
 }
 
+// 检查并清理 OAuth 端口
+async function cleanupOAuthPort() {
+  const OAUTH_PORT = 8099;
+  try {
+    // 尝试使用 npx kill-port 清理端口
+    await new Promise((resolve, reject) => {
+      const killProcess = spawn('npx', ['kill-port', OAUTH_PORT.toString()], {
+        stdio: 'pipe'
+      });
+
+      killProcess.on('close', (code) => {
+        // 无论成功或失败都继续，因为端口可能本来就没被占用
+        resolve();
+      });
+
+      killProcess.on('error', () => {
+        // 忽略错误，继续执行
+        resolve();
+      });
+
+      // 最多等待 2 秒
+      setTimeout(resolve, 2000);
+    });
+
+    logger.info('OAuth 端口清理完成');
+  } catch (error) {
+    // 忽略错误
+    logger.warn('OAuth 端口清理时出现问题，继续尝试启动');
+  }
+}
+
 // 触发登录流程
 export async function triggerLogin() {
+  // 先清理可能占用的端口
+  await cleanupOAuthPort();
+
   return new Promise((resolve, reject) => {
     logger.info('启动登录流程...');
 
     const loginScript = path.join(process.cwd(), 'scripts', 'oauth-server.js');
+    // 移除 shell: true 以避免安全警告
     const child = spawn('node', [loginScript], {
-      stdio: 'pipe',
-      shell: true
+      stdio: 'pipe'
     });
 
     let authUrl = '';

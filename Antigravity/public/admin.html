@@ -110,10 +110,7 @@
                 </ol>
             </div>
 
-            <div class="card">
-                <h3>令牌使用统计</h3>
-                <div id="tokenUsageStats">加载中...</div>
-            </div>
+
 
             <div class="card">
                 <h3>系统信息</h3>
@@ -126,21 +123,25 @@
         <!-- Tokens -->
         <div id="tokens" class="tab-content">
             <div class="card">
-                <h3>Google OAuth 登录</h3>
-                <p style="color: #6b7280; margin-bottom: 15px;">点击下方按钮开始 Google OAuth 登录流程。</p>
-                <button onclick="triggerGoogleLogin()" id="loginBtn" class="btn-success">使用 Google 登录</button>
-                <div id="loginResult" style="margin-top: 15px;"></div>
-            </div>
+                <h3>添加令牌</h3>
+                <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px; padding-right: 20px; border-right: 1px solid #eee;">
+                        <h4>方法 1: Google OAuth 登录 (推荐)</h4>
+                        <p style="color: #6b7280; margin-bottom: 15px; font-size: 0.9em;">点击下方按钮开始 Google OAuth 登录流程。</p>
+                        <button onclick="triggerGoogleLogin()" id="loginBtn" class="btn-success" style="width: 100%;">使用 Google 登录</button>
+                        <div id="loginResult" style="margin-top: 15px;"></div>
+                    </div>
 
-            <div class="card">
-                <h3>手动添加令牌</h3>
-                <p style="color: #6b7280; margin-bottom: 15px;">如果自动回调失败，请在此处粘贴完整的回调 URL。</p>
-                <div class="form-group">
-                    <label>回调 URL</label>
-                    <input type="text" id="callbackUrl" placeholder="http://localhost:xxxx/oauth-callback?code=...">
+                    <div style="flex: 1; min-width: 300px;">
+                        <h4>方法 2: 手动添加 (回调 URL)</h4>
+                        <p style="color: #6b7280; margin-bottom: 15px; font-size: 0.9em;">如果自动回调失败，请在此处粘贴完整的回调 URL。</p>
+                        <div class="form-group">
+                            <input type="text" id="callbackUrl" placeholder="http://localhost:xxxx/oauth-callback?code=..." style="width: 100%;">
+                        </div>
+                        <button onclick="addTokenManually()" id="addTokenBtn" class="btn-secondary" style="width: 100%;">添加令牌</button>
+                        <div id="addTokenResult" style="margin-top: 15px;"></div>
+                    </div>
                 </div>
-                <button onclick="addTokenManually()" id="addTokenBtn" class="btn-success">添加令牌</button>
-                <div id="addTokenResult" style="margin-top: 15px;"></div>
             </div>
 
             <div class="card">
@@ -690,38 +691,42 @@
                     }
 
                     return `
-            <div class="token-item">
-              <div style="margin-bottom: 10px;">
-                <input type="checkbox" id="token-${token.index}" onchange="toggleTokenSelection(${token.index})" ${selectedTokens.has(token.index) ? 'checked' : ''} style="width: auto; margin-right: 10px;">
-                <strong style="color: #2c3e50; font-size: 1.1em;">${accountInfo.name}</strong>
-                <small style="color: #7f8c8d; margin-left: 10px;">(${accountInfo.email})</small>
-                ${statusBadge}
-                ${disabledInfo}
-              </div>
-              <div class="key-value" style="margin-bottom: 10px;">${token.access_token}</div>
-              <div style="margin-bottom: 10px;">
-                <label style="color: #7f8c8d; font-size: 0.9em; margin-right: 8px;">代理设置:</label>
-                <select onchange="setTokenProxy(${token.index}, this.value, this)" style="padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: white; font-size: 0.9em; min-width: 250px;">
-                  <option value="" ${!accountInfo.proxyId ? 'selected' : ''}>不使用代理</option>
-                  ${proxyOptions}
-                </select>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <small style="color: #7f8c8d;">创建时间: ${token.created}</small>
-                  <small style="color: #7f8c8d; margin-left: 15px;">过期时间: ${token.expires_in}秒</small>
+            <div class="token-item" style="padding: 10px 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <input type="checkbox" id="token-${token.index}" onchange="toggleTokenSelection(${token.index})" ${selectedTokens.has(token.index) ? 'checked' : ''} style="width: auto; margin: 0;">
+                        <strong style="color: #2c3e50;">${accountInfo.name}</strong>
+                        <span style="color: #7f8c8d; font-size: 0.9em;">(${accountInfo.email})</span>
+                        ${statusBadge}
+                    </div>
+                    ${disabledInfo}
                 </div>
-                <div class="flex-buttons">
-                  ${accountInfo.disabledUntil && accountInfo.quotaExhausted ?
-                            `<button onclick="restoreToken(${token.index})" class="btn-success" style="padding: 8px 16px; background: #27ae60;">
-                      🔄 恢复配额
+                <div class="flex-buttons" style="margin-top: 0; gap: 5px;">
+                   ${accountInfo.disabledUntil && accountInfo.quotaExhausted ?
+                            `<button onclick="restoreToken(${token.index})" class="btn-success" style="padding: 4px 10px; font-size: 12px; background: #27ae60;">
+                      恢复
                     </button>` : ''
                         }
-                  <button onclick="toggleToken(${token.index}, ${!token.enable})" class="btn-warning" style="padding: 8px 16px;">
+                  <button onclick="toggleToken(${token.index}, ${!token.enable})" class="btn-warning" style="padding: 4px 10px; font-size: 12px;">
                     ${token.enable ? '禁用' : '启用'}
                   </button>
-                  <button onclick="deleteToken(${token.index})" class="btn-danger" style="padding: 8px 16px;">删除</button>
+                  <button onclick="deleteToken(${token.index})" class="btn-danger" style="padding: 4px 10px; font-size: 12px;">删除</button>
                 </div>
+              </div>
+              
+              <div style="display: flex; gap: 15px; align-items: center; font-size: 0.9em;">
+                 <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #666; font-family: monospace; background: #f5f5f5; padding: 4px 8px; border-radius: 4px;">${token.access_token}</div>
+                 <div style="display: flex; align-items: center; gap: 5px;">
+                    <label style="color: #999; font-size: 0.9em; white-space: nowrap;">代理:</label>
+                    <select onchange="setTokenProxy(${token.index}, this.value, this)" style="padding: 3px 8px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 0.9em; width: 140px;">
+                        <option value="" ${!accountInfo.proxyId ? 'selected' : ''}>无代理</option>
+                        ${proxyOptions}
+                    </select>
+                 </div>
+                 <div style="color: #999; font-size: 0.85em; white-space: nowrap;">
+                    创建: ${token.created}
+                 </div>
               </div>
             </div>
           `;

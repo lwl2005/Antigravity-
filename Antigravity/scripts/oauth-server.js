@@ -167,6 +167,17 @@ const server = http.createServer((req, res) => {
 // 使用固定端口，需要在 Google Cloud Console 配置对应的重定向 URI
 const OAUTH_PORT = 8099;
 
+// 添加错误处理，防止端口冲突导致进程崩溃
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    log.error(`端口 ${OAUTH_PORT} 已被占用，OAuth 服务器无法启动`);
+    log.error('请先关闭占用该端口的进程，或等待几秒后重试');
+    // 不要让整个进程崩溃，只是报错
+    return;
+  }
+  log.error('OAuth 服务器错误:', err.message);
+});
+
 server.listen(OAUTH_PORT, () => {
   const port = server.address().port;
   const authUrl = generateAuthUrl(port);

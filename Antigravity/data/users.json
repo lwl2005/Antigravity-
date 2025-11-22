@@ -1,0 +1,13 @@
+[
+  {
+    "id": "user_1edcafc753de2506",
+    "username": "testuser3",
+    "password": "754cbd0a5319d480795a5b074d2d856d:a661d9d6da47bc6cf0ab1043e5beb4da64e4e974ba1e20b2a6121104bf5e504cf6f36e1e5c49ae5c313746a8504513a445b0a09db236c756a8900a36d7104da1",
+    "email": "test3@test.com",
+    "apiKeys": [],
+    "systemPrompt": null,
+    "created": 1763823448784,
+    "lastLogin": 1763823463151,
+    "enabled": true
+  }
+]
