@@ -380,7 +380,9 @@ router.post('/tokens/details', async (req, res) => {
           expires_in: account.expires_in,
           timestamp: account.timestamp,
           enable: account.enable !== false,
-          proxyId: account.proxyId || null
+          proxyId: account.proxyId || null,
+          disabledUntil: account.disabledUntil || null,
+          quotaExhausted: account.quotaExhausted || false
         });
       }
     }
@@ -557,6 +559,34 @@ router.patch('/tokens/:index/proxy', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     await addLog('error', `设置Token代理失败: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 手动解除Token禁用（恢复配额）
+router.post('/tokens/:index/restore', async (req, res) => {
+  try {
+    const index = parseInt(req.params.index);
+    const accounts = await loadAccounts();
+
+    if (index < 0 || index >= accounts.length) {
+      return res.status(404).json({ error: 'Token 不存在' });
+    }
+
+    const account = accounts[index];
+
+    // 移除禁用标记
+    delete account.disabledUntil;
+    delete account.quotaExhausted;
+
+    // 保存
+    const fs = await import('fs/promises');
+    await fs.writeFile('./data/google_tokens.json', JSON.stringify(accounts, null, 2));
+
+    await addLog('info', `手动恢复 Token ${index} (配额限制已解除)`);
+    res.json({ success: true, message: 'Token 已恢复' });
+  } catch (error) {
+    await addLog('error', `恢复Token失败: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });

@@ -42,7 +42,6 @@
             <button class="nav-tab" onclick="switchTab('keys')">API密钥</button>
             <button class="nav-tab" onclick="switchTab('test')">测试面板</button>
             <button class="nav-tab" onclick="switchTab('logs')">日志</button>
-            <button class="nav-tab" onclick="switchTab('monitor')">监控</button>
             <button class="nav-tab" onclick="switchTab('settings')">设置</button>
             <button class="nav-tab" onclick="switchTab('proxies')">代理管理</button>
             <button class="nav-tab" onclick="switchTab('pricing')">定价管理</button>
@@ -50,6 +49,13 @@
 
         <!-- Home -->
         <div id="home" class="tab-content active">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                <label class="auto-refresh">
+                    <input type="checkbox" id="autoRefreshMonitor" onchange="toggleAutoRefresh('monitor')">
+                    <span>自动刷新监控</span>
+                </label>
+            </div>
+
             <div class="status-grid">
                 <div class="status-card">
                     <h3>服务状态</h3>
@@ -71,6 +77,28 @@
                     <h3>今日请求</h3>
                     <div class="value" id="todayRequests">0</div>
                 </div>
+                <div class="status-card">
+                    <h3>CPU 使用率</h3>
+                    <div class="value" id="cpuUsage">-</div>
+                </div>
+                <div class="status-card">
+                    <h3>内存</h3>
+                    <div class="value" id="memoryUsage">-</div>
+                </div>
+                <div class="status-card">
+                    <h3>运行时间</h3>
+                    <div class="value" id="uptime">-</div>
+                </div>
+                <div class="status-card">
+                    <h3>总请求数</h3>
+                    <div class="value" id="totalRequests">-</div>
+                </div>
+                <div class="status-card">
+                    <h3>服务器状态</h3>
+                    <div class="value" id="idleStatus" style="font-size: 24px;">-</div>
+                    <small style="color: #6b7280; font-size: 12px; display: block; margin-top: 5px;">空闲时间: <span
+                            id="idleTime">0</span>秒</small>
+                </div>
             </div>
 
             <div class="card">
@@ -81,6 +109,18 @@
                     <li>使用<strong>测试面板</strong>测试 API。</li>
                 </ol>
             </div>
+
+            <div class="card">
+                <h3>令牌使用统计</h3>
+                <div id="tokenUsageStats">加载中...</div>
+            </div>
+
+            <div class="card">
+                <h3>系统信息</h3>
+                <div id="systemInfo">加载中...</div>
+            </div>
+
+            <button onclick="loadMonitorData()" class="btn-secondary">刷新监控数据</button>
         </div>
 
         <!-- Tokens -->
@@ -208,52 +248,7 @@
             </div>
         </div>
 
-        <!-- Monitor -->
-        <div id="monitor" class="tab-content">
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                <label class="auto-refresh">
-                    <input type="checkbox" id="autoRefreshMonitor" onchange="toggleAutoRefresh('monitor')">
-                    <span>自动刷新</span>
-                </label>
-            </div>
 
-            <div class="status-grid">
-                <div class="status-card">
-                    <h3>CPU 使用率</h3>
-                    <div class="value" id="cpuUsage">-</div>
-                </div>
-                <div class="status-card">
-                    <h3>内存</h3>
-                    <div class="value" id="memoryUsage">-</div>
-                </div>
-                <div class="status-card">
-                    <h3>运行时间</h3>
-                    <div class="value" id="uptime">-</div>
-                </div>
-                <div class="status-card">
-                    <h3>总请求数</h3>
-                    <div class="value" id="totalRequests">-</div>
-                </div>
-                <div class="status-card">
-                    <h3>服务器状态</h3>
-                    <div class="value" id="idleStatus" style="font-size: 24px;">-</div>
-                    <small style="color: #6b7280; font-size: 12px; display: block; margin-top: 5px;">空闲时间: <span
-                            id="idleTime">0</span>秒</small>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>令牌使用统计</h3>
-                <div id="tokenUsageStats">加载中...</div>
-            </div>
-
-            <div class="card">
-                <h3>系统信息</h3>
-                <div id="systemInfo">加载中...</div>
-            </div>
-
-            <button onclick="loadMonitorData()" class="btn-secondary">刷新</button>
-        </div>
 
         <!-- Settings -->
         <div id="settings" class="tab-content">
@@ -529,7 +524,6 @@
             if (tabName === 'tokens') loadTokens();
             if (tabName === 'keys') loadKeys();
             if (tabName === 'logs') loadLogs();
-            if (tabName === 'monitor') loadMonitorData();
             if (tabName === 'home') loadHomeData();
             if (tabName === 'test') loadModels();
             if (tabName === 'settings') loadSettings();
@@ -575,6 +569,9 @@
                 document.getElementById('keyRequests').textContent = keyStats.totalRequests || 0;
                 document.getElementById('tokenEnabled').textContent = tokenStats.enabled || 0;
                 document.getElementById('tokenDisabled').textContent = tokenStats.disabled || 0;
+
+                // 加载监控数据
+                loadMonitorData();
             } catch (error) {
                 console.error('加载首页数据失败:', error);
             }
@@ -661,10 +658,30 @@
                 }
 
                 container.innerHTML = tokens.map(token => {
-                    const accountInfo = accountNames[token.index] || { email: 'Unknown', name: 'Unknown', proxyId: null };
+                    const accountInfo = accountNames[token.index] || { email: 'Unknown', name: 'Unknown', proxyId: null, disabledUntil: null, quotaExhausted: false };
                     const proxyOptions = proxies.map(p =>
                         `<option value="${p.id}" ${accountInfo.proxyId === p.id ? 'selected' : ''}>${p.name} (${p.protocol}://${p.host}:${p.port})</option>`
                     ).join('');
+
+                    // 计算状态显示
+                    let statusBadge = '';
+                    let disabledInfo = '';
+                    if (accountInfo.disabledUntil) {
+                        const restoreTime = new Date(accountInfo.disabledUntil);
+                        const now = new Date();
+                        if (restoreTime > now) {
+                            statusBadge = '<span style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">配额耗尽</span>';
+                            disabledInfo = `<div style="color: #e74c3c; font-size: 0.9em; margin-top: 5px;">⏰ 将于 ${restoreTime.toLocaleString('zh-CN')} 自动恢复</div>`;
+                        } else {
+                            statusBadge = token.enable ?
+                                '<span style="background: #27ae60; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">已启用</span>' :
+                                '<span style="background: #95a5a6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">已禁用</span>';
+                        }
+                    } else {
+                        statusBadge = token.enable ?
+                            '<span style="background: #27ae60; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">已启用</span>' :
+                            '<span style="background: #95a5a6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">已禁用</span>';
+                    }
 
                     return `
             <div class="token-item">
@@ -672,10 +689,8 @@
                 <input type="checkbox" id="token-${token.index}" onchange="toggleTokenSelection(${token.index})" ${selectedTokens.has(token.index) ? 'checked' : ''} style="width: auto; margin-right: 10px;">
                 <strong style="color: #2c3e50; font-size: 1.1em;">${accountInfo.name}</strong>
                 <small style="color: #7f8c8d; margin-left: 10px;">(${accountInfo.email})</small>
-                ${token.enable ?
-                            '<span style="background: #27ae60; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">已启用</span>' :
-                            '<span style="background: #95a5a6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px;">已禁用</span>'
-                        }
+                ${statusBadge}
+                ${disabledInfo}
               </div>
               <div class="key-value" style="margin-bottom: 10px;">${token.access_token}</div>
               <div style="margin-bottom: 10px;">
@@ -691,6 +706,11 @@
                   <small style="color: #7f8c8d; margin-left: 15px;">过期时间: ${token.expires_in}秒</small>
                 </div>
                 <div class="flex-buttons">
+                  ${accountInfo.disabledUntil && accountInfo.quotaExhausted ?
+                            `<button onclick="restoreToken(${token.index})" class="btn-success" style="padding: 8px 16px; background: #27ae60;">
+                      🔄 恢复配额
+                    </button>` : ''
+                        }
                   <button onclick="toggleToken(${token.index}, ${!token.enable})" class="btn-warning" style="padding: 8px 16px;">
                     ${token.enable ? '禁用' : '启用'}
                   </button>
@@ -819,6 +839,20 @@
                 loadTokens();
             } catch (error) {
                 alert('删除 Token 失败: ' + error.message);
+            }
+        }
+
+        async function restoreToken(index) {
+            if (!confirm('确定要手动恢复此 Token 的配额限制吗？\n\n注意：这会立即解除配额耗尽的禁用状态，但如果继续使用可能会再次遇到配额限制。')) return;
+            try {
+                const response = await authFetch(`${API_BASE}/admin/tokens/${index}/restore`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                alert(result.message || 'Token 已恢复');
+                loadTokens();
+            } catch (error) {
+                alert('恢复 Token 失败: ' + error.message);
             }
         }
 
