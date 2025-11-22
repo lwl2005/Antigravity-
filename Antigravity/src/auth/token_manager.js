@@ -243,6 +243,44 @@ class TokenManager {
   // ========== 统计和监控 ==========
 
   /**
+   * 记录 Token 费用使用情况
+   * @param {Object} token - Token对象
+   * @param {number} cost - 产生的费用(美元)
+   */
+  addUsage(token, cost) {
+    try {
+      // 在内存中找到最新的 token 对象引用
+      const found = this.tokens.find(t => t.refresh_token === token.refresh_token);
+      if (!found) return;
+
+      // 初始化统计字段
+      found.totalCost = found.totalCost || 0;
+      found.dailyCost = found.dailyCost || 0;
+      found.lastResetTime = found.lastResetTime || 0;
+      found.totalRequests = (found.totalRequests || 0) + 1;
+
+      // 检查是否需要每日重置 (每天0点)
+      const now = new Date();
+      const lastReset = new Date(found.lastResetTime);
+      
+      // 简单比较日期字符串，不同则意味着跨天
+      if (now.toDateString() !== lastReset.toDateString()) {
+        found.dailyCost = 0;
+        // found.dailyRequests = 0; // 如果需要可以添加
+        found.lastResetTime = now.getTime();
+      }
+
+      // 更新费用
+      found.totalCost += cost;
+      found.dailyCost += cost;
+
+      this.saveToFile();
+    } catch (error) {
+      log.error('记录token费用失败:', error.message);
+    }
+  }
+
+  /**
    * 记录 Token 使用
    */
   recordUsage(token) {

@@ -468,6 +468,11 @@ app.post('/v1beta/models/:model\\:streamGenerateContent', async (req, res) => {
           // 扣除余额
           await deductBalance(req.apiKey, cost.totalCost);
 
+          // 记录 Token 账号成本
+          if (token) {
+            tokenManager.addUsage(token, cost.totalCost);
+          }
+
           logger.info(`✅ 计费完成: Key ${req.apiKey.substring(0, 10)}..., $${cost.totalCost.toFixed(6)}`);
         } catch (error) {
           logger.error('计费失败:', error.message);
@@ -602,6 +607,27 @@ app.post('/v1beta/models/:model\\:generateContent', async (req, res) => {
 
     if (finalResponse) {
       res.json(finalResponse);
+
+      // 计费逻辑 (非流式)
+      if (req.apiKey && !req.isSystemKey && finalResponse.usageMetadata) {
+        setImmediate(async () => {
+          try {
+            const inputTokens = finalResponse.usageMetadata.promptTokenCount || 0;
+            const outputTokens = finalResponse.usageMetadata.candidatesTokenCount || 0;
+            const cost = await calculateCost(model, inputTokens, outputTokens);
+            
+            await logUsage(req.apiKey, model, inputTokens, outputTokens, null, null);
+            await deductBalance(req.apiKey, cost.totalCost);
+            
+            if (token) {
+              tokenManager.addUsage(token, cost.totalCost);
+            }
+            logger.info(`✅ 计费完成 (非流式): Key ${req.apiKey.substring(0, 10)}..., $${cost.totalCost.toFixed(6)}`);
+          } catch (e) {
+            logger.error('非流式计费失败:', e.message);
+          }
+        });
+      }
     } else {
       throw new Error('未收到有效响应');
     }
