@@ -23,6 +23,26 @@ function createDatabase() {
 
 // 初始化数据库表结构
 function initializeSchema(db) {
+  // 系统设置表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+
+  // 管理员表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      last_login INTEGER
+    );
+  `);
+
   // 用户表
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (

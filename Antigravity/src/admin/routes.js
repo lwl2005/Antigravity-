@@ -17,15 +17,74 @@ import { getSecurityStats, unbanIP, unbanDevice, isIPBanned, isDeviceBanned } fr
 import { isUserBanned, banUserFromSharing, unbanUser, recordShareUsage, getUserAverageUsage, checkAndBanAbuser, addToTokenBlacklist, removeFromTokenBlacklist, isUserBlacklisted, getTokenBlacklist, createVote, castVote, addVoteComment, processVoteResult, getActiveVotes, getVoteById, getUserVoteHistory, getAllVotes, getUserShareStatus } from './share_manager.js';
 import { registerUser, loginUser, getUserById, getUserByUsername, generateUserApiKey, deleteUserApiKey, getUserApiKeys, validateUserApiKey, updateUser, deleteUser, getUserStats, getAllUsers, toggleUserStatus, loginOrRegisterWithGoogle, getUserTokens, addUserToken, deleteUserToken, getUserAvailableToken } from './user_manager.js';
 import { loadAIConfig, saveAIConfig, runAIModeration, getAIModerationLogs, getAIStatistics, startAIScheduler, stopAIScheduler, restartAIScheduler } from './ai_moderator.js';
+import { isSystemInitialized, initializeSystem, adminLogin, changeAdminPassword, getAdminInfo, getAllAdmins, createAdmin, deleteAdmin } from './admin_manager.js';
 
 // 配置文件上传
 const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 
-// 登录接口（不需要认证）
+// ========== 系统初始化相关（公开路由）==========
+
+// 检查系统是否已初始化
+router.get('/system/status', async (req, res) => {
+  try {
+    const initialized = isSystemInitialized();
+    res.json({ initialized });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 初始化系统（创建第一个管理员）
+router.post('/system/initialize', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: '用户名和密码不能为空' });
+    }
+
+    const result = initializeSystem(username, password);
+    await addLog('success', `系统初始化完成，管理员: ${username}`);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `系统初始化失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ========== 管理员登录相关 ==========
+
+// 新的管理员登录接口（使用数据库）
+router.post('/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: '用户名和密码不能为空' });
+    }
+
+    const result = adminLogin(username, password);
+    await addLog('info', `管理员登录成功: ${username}`);
+    res.json(result);
+  } catch (error) {
+    await addLog('warn', `管理员登录失败: ${error.message}`);
+    res.status(401).json({ error: error.message });
+  }
+});
+
+// 旧的登录接口（使用config.json）- 保留以兼容旧系统
 router.post('/login', async (req, res) => {
   try {
+    // 如果系统已初始化，重定向到新的登录接口
+    if (isSystemInitialized()) {
+      return res.status(400).json({
+        error: '请使用新的登录接口 /admin/admin/login',
+        redirectTo: '/admin/admin/login'
+      });
+    }
+
     const { password } = req.body;
     if (!password) {
       return res.status(400).json({ error: '请输入密码' });
@@ -33,7 +92,7 @@ router.post('/login', async (req, res) => {
 
     if (verifyPassword(password)) {
       const token = createSession();
-      await addLog('info', '管理员登录成功');
+      await addLog('info', '管理员登录成功（旧系统）');
       res.json({ success: true, token });
     } else {
       await addLog('warn', '管理员登录失败：密码错误');
@@ -1697,6 +1756,78 @@ router.post('/run-command', adminAuth, async (req, res) => {
       stdout: error.stdout || '',
       stderr: error.stderr || ''
     });
+  }
+});
+
+// ========== 管理员管理相关（需要管理员认证）==========
+
+// 获取所有管理员列表
+router.get('/admin/list', adminAuth, async (req, res) => {
+  try {
+    const admins = getAllAdmins();
+    res.json({ admins });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 创建新管理员
+router.post('/admin/create', adminAuth, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: '用户名和密码不能为空' });
+    }
+
+    const result = createAdmin(username, password);
+    await addLog('success', `创建新管理员: ${username}`);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `创建管理员失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 删除管理员
+router.delete('/admin/:username', adminAuth, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const result = deleteAdmin(username);
+    await addLog('warn', `删除管理员: ${username}`);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `删除管理员失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 修改管理员密码
+router.post('/admin/change-password', adminAuth, async (req, res) => {
+  try {
+    const { username, oldPassword, newPassword } = req.body;
+
+    if (!username || !oldPassword || !newPassword) {
+      return res.status(400).json({ error: '所有字段都不能为空' });
+    }
+
+    const result = changeAdminPassword(username, oldPassword, newPassword);
+    await addLog('info', `管理员 ${username} 修改了密码`);
+    res.json(result);
+  } catch (error) {
+    await addLog('error', `修改密码失败: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 获取管理员信息
+router.get('/admin/info/:username', adminAuth, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const info = getAdminInfo(username);
+    res.json(info);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
   }
 });
 

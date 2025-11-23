@@ -17,8 +17,7 @@
   },
   "security": {
     "maxRequestSize": "50mb",
-    "apiKey": "sk-123",
-    "adminPassword": "admin123"
+    "apiKey": "sk-123"
   },
   "systemInstruction": "",
   "oauth": {

@@ -12,10 +12,43 @@
 <body>
     <!-- Login Overlay -->
     <div id="loginOverlay" class="login-overlay">
-        <div class="login-box">
-            <h2 style="margin-bottom: 8px; font-size: 24px; font-weight: 700;">管理控制台</h2>
-            <p style="color: #6b7280; margin-bottom: 24px;">请输入密码以继续</p>
+        <!-- 初始化界面 -->
+        <div id="initBox" class="login-box" style="display: none;">
+            <h2 style="margin-bottom: 8px; font-size: 24px; font-weight: 700;">🎉 欢迎使用</h2>
+            <p style="color: #6b7280; margin-bottom: 24px;">首次使用，请设置管理员账号</p>
             <div class="form-group">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500;">用户名</label>
+                <input type="text" id="initUsername" placeholder="3-20个字符，字母数字下划线"
+                    onkeypress="if(event.key==='Enter')document.getElementById('initPassword').focus()">
+            </div>
+            <div class="form-group">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500;">密码</label>
+                <input type="password" id="initPassword" placeholder="至少8个字符"
+                    onkeypress="if(event.key==='Enter')document.getElementById('initPasswordConfirm').focus()">
+            </div>
+            <div class="form-group">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500;">确认密码</label>
+                <input type="password" id="initPasswordConfirm" placeholder="再次输入密码"
+                    onkeypress="if(event.key==='Enter')doInitialize()">
+            </div>
+            <button onclick="doInitialize()" id="initBtn" style="width: 100%;">创建管理员账号</button>
+            <div id="initError" class="login-error" style="color: #ef4444; margin-top: 12px; font-size: 14px;"></div>
+            <div id="initSuccess" style="color: #10b981; margin-top: 12px; font-size: 14px; display: none;">
+                ✓ 初始化成功！正在跳转...
+            </div>
+        </div>
+
+        <!-- 登录界面 -->
+        <div id="loginBox" class="login-box">
+            <h2 style="margin-bottom: 8px; font-size: 24px; font-weight: 700;">管理控制台</h2>
+            <p style="color: #6b7280; margin-bottom: 24px;">请登录以继续</p>
+            <div class="form-group">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500;">用户名</label>
+                <input type="text" id="loginUsername" placeholder="管理员用户名"
+                    onkeypress="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+            </div>
+            <div class="form-group">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500;">密码</label>
                 <input type="password" id="loginPassword" placeholder="密码"
                     onkeypress="if(event.key==='Enter')doLogin()">
             </div>
@@ -419,11 +452,116 @@
             };
         }
 
+        // 检查系统初始化状态
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/system/status`);
+                const data = await response.json();
+
+                if (!data.initialized) {
+                    // 显示初始化界面
+                    document.getElementById('initBox').style.display = 'block';
+                    document.getElementById('loginBox').style.display = 'none';
+                } else {
+                    // 显示登录界面
+                    document.getElementById('initBox').style.display = 'none';
+                    document.getElementById('loginBox').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('检查系统状态失败:', error);
+                // 默认显示登录界面
+                document.getElementById('loginBox').style.display = 'block';
+            }
+        }
+
+        // 初始化系统
+        async function doInitialize() {
+            const username = document.getElementById('initUsername').value.trim();
+            const password = document.getElementById('initPassword').value;
+            const passwordConfirm = document.getElementById('initPasswordConfirm').value;
+            const errorEl = document.getElementById('initError');
+            const successEl = document.getElementById('initSuccess');
+            const btn = document.getElementById('initBtn');
+
+            errorEl.textContent = '';
+            successEl.style.display = 'none';
+
+            // 验证输入
+            if (!username) {
+                errorEl.textContent = '请输入用户名';
+                return;
+            }
+
+            if (username.length < 3 || username.length > 20) {
+                errorEl.textContent = '用户名长度必须在3-20个字符之间';
+                return;
+            }
+
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                errorEl.textContent = '用户名只能包含字母、数字和下划线';
+                return;
+            }
+
+            if (!password) {
+                errorEl.textContent = '请输入密码';
+                return;
+            }
+
+            if (password.length < 8) {
+                errorEl.textContent = '密码长度至少8个字符';
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                errorEl.textContent = '两次输入的密码不一致';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '初始化中...';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/system/initialize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    successEl.style.display = 'block';
+                    errorEl.textContent = '';
+
+                    // 初始化成功后，自动登录
+                    setTimeout(async () => {
+                        document.getElementById('loginUsername').value = username;
+                        document.getElementById('loginPassword').value = password;
+                        await checkSystemStatus();
+                        await doLogin();
+                    }, 1500);
+                } else {
+                    errorEl.textContent = data.error || '初始化失败';
+                }
+            } catch (error) {
+                errorEl.textContent = '初始化失败: ' + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '创建管理员账号';
+            }
+        }
+
         // 登录
         async function doLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             const errorEl = document.getElementById('loginError');
             const btn = document.getElementById('loginBtn2');
+
+            if (!username) {
+                errorEl.textContent = '请输入用户名';
+                return;
+            }
 
             if (!password) {
                 errorEl.textContent = '请输入密码';
@@ -435,10 +573,10 @@
             errorEl.textContent = '';
 
             try {
-                const response = await fetch(`${API_BASE}/admin/login`, {
+                const response = await fetch(`${API_BASE}/admin/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
+                    body: JSON.stringify({ username, password })
                 });
 
                 const data = await response.json();
@@ -446,6 +584,7 @@
                 if (response.ok && data.success) {
                     adminToken = data.token;
                     localStorage.setItem('adminToken', adminToken);
+                    localStorage.setItem('adminUsername', username);
                     document.getElementById('loginOverlay').classList.add('hidden');
                     loadHomeData();
                 } else {
@@ -1865,6 +2004,9 @@
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('baseUrl').textContent = API_BASE;
+
+            // 首先检查系统是否已初始化
+            await checkSystemStatus();
 
             // 检查是否已登录
             const isLoggedIn = await verifySession();
